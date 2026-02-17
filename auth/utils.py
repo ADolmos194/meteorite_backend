@@ -1,0 +1,10 @@
+# Mensajes de autenticación
+MSG_USER_BLOCKED = "El usuario está bloqueado debido al mal ingreso de su credencial, contactar con soporte."
+MSG_LOGIN_SUCCESS = "Verificado correctamente, ya puede ingresar."
+MSG_ACCOUNT_CREATED = "Se creó la cuenta correctamente."
+MSG_CODE_VERIFIED = "Código verificado correctamente."
+MSG_ENTER_CODE = "Por favor ingresar código de verificación."
+MSG_USER_INACTIVE = "La cuenta no está activa. Por favor, verifique su código."
+MSG_INVALID_CREDENTIALS = "Credenciales inválidas."
+MSG_INVALID_CODE = "El código es inválido o ha expirado."
+MSG_INVALID_SYSTEM = "ID de sistema inválido."

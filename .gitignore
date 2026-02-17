@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.hypothesis/
+.nox/
+.tox/
+
+# Environment Variables
+.env
+.venv
+venv/
+ENV/
+env.bak
+.env.local
+local_settings.py
+secrets.json
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+static/
+media/
+staticfiles/
+
+# Logs
+*.log
+logs/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker logs
+*.docker.log
+
+# Temporary files
+*.bak
+*.tmp
+*.temp
