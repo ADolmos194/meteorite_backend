@@ -70,8 +70,9 @@ def country_select_view(request):
     Solo retorna países ACTIVOS con los campos mínimos necesarios: id y name.
     """
     countries = list(
-        Country.objects.filter(status_id=STATUS_ACTIVO).order_by("name").values("id", "name")
-    )
+        Country.objects.filter(
+            status_id=STATUS_ACTIVO).order_by("name").values(
+            "id", "name"))
     return succescall(
         {"results": countries, "total": len(countries)},
         "Lista de países activos para selector obtenida correctamente",
@@ -93,7 +94,8 @@ def country_create_view(request):
 
     if exists:
         return errorcall(
-            "Ya existe un país con ese código, nombre o abreviación activo/inactivo",
+            "Ya existe un país con ese código, nombre o abreviación "
+            "activo/inactivo",
             status.HTTP_400_BAD_REQUEST,
         )
 
@@ -140,7 +142,8 @@ def country_update_view(request):
 
     if exists:
         return errorcall(
-            "Ya existe otro país con ese código, nombre o abreviación activo/inactivo",
+            "Ya existe otro país con ese código, nombre o abreviación "
+            "activo/inactivo",
             status.HTTP_400_BAD_REQUEST,
         )
 
@@ -166,7 +169,7 @@ def country_inactivate_view(request):
     pk = request.data.get("id")
     if pk:
         pks.append(pk)
-    
+
     if not pks:
         return errorcall("IDs no proporcionados", status.HTTP_400_BAD_REQUEST)
 
@@ -185,7 +188,7 @@ def country_inactivate_view(request):
             country.save()
             save_audit_log(country, request.user.id, event_type)
             count += 1
-    
+
     return succescall(None, f"{count} países inactivados correctamente")
 
 
@@ -196,7 +199,7 @@ def country_restore_view(request):
     pk = request.data.get("id")
     if pk:
         pks.append(pk)
-    
+
     if not pks:
         return errorcall("IDs no proporcionados", status.HTTP_400_BAD_REQUEST)
 
@@ -226,7 +229,7 @@ def country_annul_view(request):
     pk = request.data.get("id")
     if pk:
         pks.append(pk)
-    
+
     if not pks:
         return errorcall("IDs no proporcionados", status.HTTP_400_BAD_REQUEST)
 
@@ -245,7 +248,6 @@ def country_annul_view(request):
             country.save()
             save_audit_log(country, request.user.id, event_type)
             count += 1
-
 
     return succescall(None, f"{count} países anulados correctamente")
 
@@ -285,7 +287,9 @@ def country_log_detail_view(request):
         key_audit_log__name_table=Country._meta.db_table
     )
     serializer = AuditLogDetailSerializer(details, many=True)
-    return succescall(serializer.data, "Detalles del log obtenidos correctamente")
+    return succescall(
+        serializer.data,
+        "Detalles del log obtenidos correctamente")
 
 
 @api_view(["GET"])
@@ -294,7 +298,14 @@ def country_export_view(request):
     countries = Country.objects.exclude(
         status_id=STATUS_ANULADO
     ).order_by("name")
-    headers = ["CÓDIGO", "NOMBRE", "ABREVIACIÓN", "ISO2", "ISO3", "NÚMERO DE PREFIJO", "ESTADO"]
+    headers = [
+        "CÓDIGO",
+        "NOMBRE",
+        "ABREVIACIÓN",
+        "ISO2",
+        "ISO3",
+        "NÚMERO DE PREFIJO",
+        "ESTADO"]
     handler = ExcelMasterHandler(Country, headers, "paises", request.user.id)
 
     field_mapping = {
@@ -312,7 +323,14 @@ def country_export_view(request):
 @api_view(["GET"])
 @MiddlewareAutentication("general_master_country_template")
 def country_template_view(request):
-    headers = ["CÓDIGO", "NOMBRE", "ABREVIACIÓN", "ISO2", "ISO3", "NÚMERO DE PREFIJO", "ESTADO"]
+    headers = [
+        "CÓDIGO",
+        "NOMBRE",
+        "ABREVIACIÓN",
+        "ISO2",
+        "ISO3",
+        "NÚMERO DE PREFIJO",
+        "ESTADO"]
     handler = ExcelMasterHandler(Country, headers, "paises", request.user.id)
     return handler.generate_template()
 
@@ -321,7 +339,14 @@ def country_template_view(request):
 @MiddlewareAutentication("general_master_country_import")
 @transaction.atomic
 def country_import_view(request):
-    headers = ["CÓDIGO", "NOMBRE", "ABREVIACIÓN", "ISO2", "ISO3", "NÚMERO DE PREFIJO", "ESTADO"]
+    headers = [
+        "CÓDIGO",
+        "NOMBRE",
+        "ABREVIACIÓN",
+        "ISO2",
+        "ISO3",
+        "NÚMERO DE PREFIJO",
+        "ESTADO"]
     handler = ExcelMasterHandler(Country, headers, "paises", request.user.id)
 
     field_mapping = {
@@ -338,5 +363,7 @@ def country_import_view(request):
         save_audit_log(instance, request.user.id, EVENT_IMPORT)
 
     return handler.import_data(
-        request, validate_country_import_row, field_mapping, audit_save_fn=_audit_import
-    )
+        request,
+        validate_country_import_row,
+        field_mapping,
+        audit_save_fn=_audit_import)

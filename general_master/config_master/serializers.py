@@ -27,7 +27,8 @@ class CountrySerializer(serializers.ModelSerializer):
 
 class DepartmentSerializer(serializers.ModelSerializer):
     status_name = serializers.CharField(source="status.name", read_only=True)
-    country_name = serializers.CharField(source="key_country.name", read_only=True)
+    country_name = serializers.CharField(
+        source="key_country.name", read_only=True)
 
     class Meta:
         model = Department

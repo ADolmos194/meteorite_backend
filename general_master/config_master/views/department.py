@@ -113,11 +113,13 @@ def department_update_view(request):
     pk = request.data.get("id")
     dept = Department.objects.filter(pk=pk).first()
     if not dept:
-        return errorcall("Departamento no encontrado", status.HTTP_404_NOT_FOUND)
+        return errorcall(
+            "Departamento no encontrado",
+            status.HTTP_404_NOT_FOUND)
 
     code = str(request.data.get("code", dept.code)).strip().upper()
     name = str(request.data.get("name", dept.name)).strip().upper()
-    
+
     exists = (
         Department.objects.filter(
             Q(code=code) | Q(name=name),
@@ -143,7 +145,9 @@ def department_update_view(request):
     if serializer.is_valid():
         instance = serializer.save(key_user_updated_id=request.user.id)
         save_audit_log(instance, request.user.id, EVENT_UPDATE, old_instance)
-        return succescall(serializer.data, "Departamento actualizado correctamente")
+        return succescall(
+            serializer.data,
+            "Departamento actualizado correctamente")
     return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
@@ -152,8 +156,9 @@ def department_update_view(request):
 def department_inactivate_view(request):
     pks = request.data.get("ids", [])
     pk = request.data.get("id")
-    if pk: pks.append(pk)
-    
+    if pk:
+        pks.append(pk)
+
     if not pks:
         return errorcall("IDs no proporcionados", status.HTTP_400_BAD_REQUEST)
 
@@ -162,7 +167,9 @@ def department_inactivate_view(request):
 
     depts = Department.objects.filter(pk__in=pks)
     if not depts.exists():
-        return errorcall("Departamentos no encontrados", status.HTTP_404_NOT_FOUND)
+        return errorcall(
+            "Departamentos no encontrados",
+            status.HTTP_404_NOT_FOUND)
 
     count = 0
     with transaction.atomic():
@@ -172,7 +179,7 @@ def department_inactivate_view(request):
             dept.save()
             save_audit_log(dept, request.user.id, event_type)
             count += 1
-    
+
     return succescall(None, f"{count} departamentos inactivados correctamente")
 
 
@@ -181,8 +188,9 @@ def department_inactivate_view(request):
 def department_restore_view(request):
     pks = request.data.get("ids", [])
     pk = request.data.get("id")
-    if pk: pks.append(pk)
-    
+    if pk:
+        pks.append(pk)
+
     if not pks:
         return errorcall("IDs no proporcionados", status.HTTP_400_BAD_REQUEST)
 
@@ -191,7 +199,9 @@ def department_restore_view(request):
 
     depts = Department.objects.filter(pk__in=pks)
     if not depts.exists():
-        return errorcall("Departamentos no encontrados", status.HTTP_404_NOT_FOUND)
+        return errorcall(
+            "Departamentos no encontrados",
+            status.HTTP_404_NOT_FOUND)
 
     count = 0
     with transaction.atomic():
@@ -210,8 +220,9 @@ def department_restore_view(request):
 def department_annul_view(request):
     pks = request.data.get("ids", [])
     pk = request.data.get("id")
-    if pk: pks.append(pk)
-    
+    if pk:
+        pks.append(pk)
+
     if not pks:
         return errorcall("IDs no proporcionados", status.HTTP_400_BAD_REQUEST)
 
@@ -220,7 +231,9 @@ def department_annul_view(request):
 
     depts = Department.objects.filter(pk__in=pks)
     if not depts.exists():
-        return errorcall("Departamentos no encontrados", status.HTTP_404_NOT_FOUND)
+        return errorcall(
+            "Departamentos no encontrados",
+            status.HTTP_404_NOT_FOUND)
 
     count = 0
     with transaction.atomic():
@@ -230,7 +243,7 @@ def department_annul_view(request):
             dept.save()
             save_audit_log(dept, request.user.id, event_type)
             count += 1
-    
+
     return succescall(None, f"{count} departamentos anulados correctamente")
 
 
@@ -243,14 +256,18 @@ def department_log_view(request):
 
     dept = Department.objects.filter(pk=pk).first()
     if not dept:
-        return errorcall("Departamento no encontrado", status.HTTP_404_NOT_FOUND)
+        return errorcall(
+            "Departamento no encontrado",
+            status.HTTP_404_NOT_FOUND)
 
     logs = AuditLog.objects.filter(
         record_id=pk,
         name_table=Department._meta.db_table
     ).order_by("-created_at")
     serializer = AuditLogSerializer(logs, many=True)
-    return succescall(serializer.data, "Logs del departamento obtenidos correctamente")
+    return succescall(
+        serializer.data,
+        "Logs del departamento obtenidos correctamente")
 
 
 @api_view(["POST"])
@@ -269,15 +286,23 @@ def department_log_detail_view(request):
         key_audit_log__name_table=Department._meta.db_table
     )
     serializer = AuditLogDetailSerializer(details, many=True)
-    return succescall(serializer.data, "Detalles del log obtenidos correctamente")
+    return succescall(
+        serializer.data,
+        "Detalles del log obtenidos correctamente")
 
 
 @api_view(["GET"])
 @MiddlewareAutentication("general_master_department_export")
 def department_export_view(request):
-    depts = Department.objects.exclude(status_id=STATUS_ANULADO).order_by("key_country__name", "name")
+    depts = Department.objects.exclude(
+        status_id=STATUS_ANULADO).order_by(
+        "key_country__name", "name")
     headers = ["CÓDIGO", "NOMBRE", "ABREVIACIÓN", "PAÍS", "ESTADO"]
-    handler = ExcelMasterHandler(Department, headers, "departamentos", request.user.id)
+    handler = ExcelMasterHandler(
+        Department,
+        headers,
+        "departamentos",
+        request.user.id)
     field_mapping = {
         "code": "CÓDIGO",
         "name": "NOMBRE",
@@ -292,7 +317,11 @@ def department_export_view(request):
 @MiddlewareAutentication("general_master_department_template")
 def department_template_view(request):
     headers = ["CÓDIGO", "NOMBRE", "ABREVIACIÓN", "PAÍS", "ESTADO"]
-    handler = ExcelMasterHandler(Department, headers, "departamentos", request.user.id)
+    handler = ExcelMasterHandler(
+        Department,
+        headers,
+        "departamentos",
+        request.user.id)
     return handler.generate_template()
 
 
@@ -301,7 +330,11 @@ def department_template_view(request):
 @transaction.atomic
 def department_import_view(request):
     headers = ["CÓDIGO", "NOMBRE", "ABREVIACIÓN", "PAÍS", "ESTADO"]
-    handler = ExcelMasterHandler(Department, headers, "departamentos", request.user.id)
+    handler = ExcelMasterHandler(
+        Department,
+        headers,
+        "departamentos",
+        request.user.id)
     field_mapping = {
         "CÓDIGO": "code",
         "NOMBRE": "name",
@@ -311,4 +344,8 @@ def department_import_view(request):
     def _audit_import(instance):
         save_audit_log(instance, request.user.id, EVENT_IMPORT)
 
-    return handler.import_data(request, validate_department_import_row, field_mapping, audit_save_fn=_audit_import)
+    return handler.import_data(
+        request,
+        validate_department_import_row,
+        field_mapping,
+        audit_save_fn=_audit_import)

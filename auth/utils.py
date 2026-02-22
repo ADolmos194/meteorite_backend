@@ -1,5 +1,8 @@
 # Mensajes de autenticación
-MSG_USER_BLOCKED = "El usuario está bloqueado debido al mal ingreso de su credencial, contactar con soporte."
+MSG_USER_BLOCKED = (
+    "El usuario está bloqueado debido al mal ingreso de su credencial, "
+    "contactar con soporte."
+)
 MSG_LOGIN_SUCCESS = "Verificado correctamente, ya puede ingresar."
 MSG_ACCOUNT_CREATED = "Se creó la cuenta correctamente."
 MSG_CODE_VERIFIED = "Código verificado correctamente."

@@ -5,7 +5,8 @@ from .models import Country, Department
 
 def validate_department_import_row(row_data, seen_codes):
     """
-    Valida una fila individual del Excel para Departamento y retorna (es_valido, errores_dict).
+    Valida una fila individual del Excel para Departamento
+    y retorna (es_valido, errores_dict).
     """
     code = str(row_data.get("CÓDIGO", "")).strip().upper()
     name = str(row_data.get("NOMBRE", "")).strip().upper()
@@ -39,7 +40,8 @@ def validate_department_import_row(row_data, seen_codes):
         if not country:
             errors["PAÍS"] = f"País activo '{country_val}' no encontrado"
         else:
-            # Inject UUID for the handler's auto-merge but keep the name in "PAÍS" for display
+            # Inject UUID for the handler's auto-merge but keep the name in
+            # "PAÍS" for display
             row_data["key_country_id"] = str(country.id)
 
     if status_name:
@@ -58,7 +60,9 @@ def validate_department_import_row(row_data, seen_codes):
     # Verificar duplicados en el mismo archivo (combinación código + país)
     row_key = f"{code}_{country.id}"
     if row_key in seen_codes:
-        errors["CÓDIGO"] = f"Código '{code}' duplicado para este país en el archivo"
+        errors["CÓDIGO"] = (
+            f"Código '{code}' duplicado para este país en el archivo"
+        )
         return False, errors
     seen_codes.add(row_key)
 
@@ -70,16 +74,29 @@ def validate_department_import_row(row_data, seen_codes):
     ).exists()
 
     if exists:
-        if Department.objects.filter(code=code, key_country_id=country.id, status_id__in=[STATUS_ACTIVO, STATUS_INACTIVO]).exists():
+        if Department.objects.filter(
+            code=code,
+            key_country_id=country.id,
+            status_id__in=[
+                STATUS_ACTIVO,
+                STATUS_INACTIVO]).exists():
             errors["CÓDIGO"] = f"El código '{code}' ya existe en este país"
-        if Department.objects.filter(name=name, key_country_id=country.id, status_id__in=[STATUS_ACTIVO, STATUS_INACTIVO]).exists():
+        if Department.objects.filter(
+            name=name,
+            key_country_id=country.id,
+            status_id__in=[
+                STATUS_ACTIVO,
+                STATUS_INACTIVO]).exists():
             errors["NOMBRE"] = f"El nombre '{name}' ya existe en este país"
-        
+
         if not errors:
-            errors["CÓDIGO"] = "Registro duplicado en base de datos para este país"
+            errors["CÓDIGO"] = (
+                "Registro duplicado en base de datos para este país"
+            )
         return False, errors
 
     return True, {}
+
 
 # Mensajes de error para la importación
 MSG_COLUMN_MISSING = (

@@ -68,19 +68,25 @@ MIDDLEWARE = [
 # Configuración de Seguridad para Producción
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False") == "True"
 SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0"))
-SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS", "False") == "True"
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv(
+    "SECURE_HSTS_INCLUDE_SUBDOMAINS", "False") == "True"
 SECURE_HSTS_PRELOAD = os.getenv("SECURE_HSTS_PRELOAD", "False") == "True"
 SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False") == "True"
 CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "False") == "True"
 
 # Configuración de expiración de sesión
 # SESSION_COOKIE_AGE: tiempo de vida de la cookie en segundos (default 1 hora)
-SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", str(60 * 60)))  # 3600s = 1h
+SESSION_COOKIE_AGE = int(
+    os.getenv(
+        "SESSION_COOKIE_AGE", str(
+            60 * 60)))  # 3600s = 1h
 # Con True: el timer se reinicia en cada request (timeout de INACTIVIDAD)
 # Con False: la sesión expira 1h exacta desde el login sin importar actividad
-SESSION_SAVE_EVERY_REQUEST = os.getenv("SESSION_SAVE_EVERY_REQUEST", "True") == "True"
+SESSION_SAVE_EVERY_REQUEST = os.getenv(
+    "SESSION_SAVE_EVERY_REQUEST", "True") == "True"
 # Con True: la sesión expira al cerrar el browser (ignora SESSION_COOKIE_AGE)
-SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv("SESSION_EXPIRE_AT_BROWSER_CLOSE", "False") == "True"
+SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv(
+    "SESSION_EXPIRE_AT_BROWSER_CLOSE", "False") == "True"
 
 # Solo añadir WhiteNoise si no estamos en DEBUG o si está instalado
 try:
@@ -131,16 +137,20 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": "django.contrib.auth.password_validation."
+                "UserAttributeSimilarityValidator",
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "NAME": "django.contrib.auth.password_validation."
+                "MinimumLengthValidator",
     },
     {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+        "NAME": "django.contrib.auth.password_validation."
+                "CommonPasswordValidator",
     },
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        "NAME": "django.contrib.auth.password_validation."
+                "NumericPasswordValidator",
     },
 ]
 
@@ -166,7 +176,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 if HAS_WHITENOISE:
     STORAGES = {
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": "whitenoise.storage."
+                       "CompressedManifestStaticFilesStorage",
         },
     }
 
@@ -205,13 +216,17 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": os.getenv("THROTTLE_RATE_ANON", "100/day"),
         "user": os.getenv("THROTTLE_RATE_USER", "1000/day"),
-        # Rate limit estricto para el endpoint de login (por IP, sin autenticar)
+        # Rate limit estricto para el endpoint de login (por IP, sin
+        # autenticar)
         "login": os.getenv("THROTTLE_RATE_LOGIN", "10/minute"),
     },
 }
 
 # Tamaño máximo permitido para imports de Excel (en bytes). Default: 5 MB.
-MAX_EXCEL_UPLOAD_SIZE = int(os.getenv("MAX_EXCEL_UPLOAD_SIZE", str(5 * 1024 * 1024)))
+MAX_EXCEL_UPLOAD_SIZE = int(
+    os.getenv(
+        "MAX_EXCEL_UPLOAD_SIZE", str(
+            5 * 1024 * 1024)))
 # Configuración de Email (SMTP)
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
@@ -219,4 +234,6 @@ EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Yachay Agro <noreply@yachayagro.com>")
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL",
+    "Yachay Agro <noreply@yachayagro.com>")

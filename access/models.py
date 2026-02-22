@@ -22,8 +22,11 @@ class Menu(BaseModel):
     ordering = models.IntegerField(default=0)
     to = models.CharField(max_length=255, null=True, blank=True)
     parent = models.ForeignKey(
-        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
-    )
+        "self",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="children")
 
     def __str__(self):
         return self.title
@@ -143,8 +146,14 @@ class PermissionSystem(BaseModel):
 
 
 class RoleMenu(BaseModel):
-    role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="role_menus")
-    menu = models.ForeignKey(Menu, on_delete=models.CASCADE, related_name="role_menus")
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.CASCADE,
+        related_name="role_menus")
+    menu = models.ForeignKey(
+        Menu,
+        on_delete=models.CASCADE,
+        related_name="role_menus")
 
     def __str__(self):
         return f"{self.role.name} - {self.menu.title}"

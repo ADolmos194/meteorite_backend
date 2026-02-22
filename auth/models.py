@@ -52,7 +52,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         "auth.Group",
         verbose_name="groups",
         blank=True,
-        help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
+        help_text=(
+            "The groups this user belongs to. A user will get all "
+            "permissions granted to each of their groups."
+        ),
         related_name="meteorite_user_set",
         related_query_name="user",
     )
@@ -88,7 +91,8 @@ class VerificationCode(models.Model):
 
     def is_expired(self):
         # 2 minutes and 30 seconds expiration
-        expiration_time = self.created_at + timezone.timedelta(minutes=2, seconds=30)
+        expiration_time = self.created_at + \
+            timezone.timedelta(minutes=2, seconds=30)
         return timezone.now() > expiration_time
 
     def __str__(self):

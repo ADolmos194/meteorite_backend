@@ -21,11 +21,14 @@ class Status(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField()
     color_code = models.CharField(
-        max_length=7, default="#6C757D", help_text="Hex color code (e.g., #28A745)"
-    )
+        max_length=7,
+        default="#6C757D",
+        help_text="Hex color code (e.g., #28A745)")
     icon = models.CharField(
-        max_length=50, null=True, blank=True, help_text="Icon name (e.g., fas fa-check)"
-    )
+        max_length=50,
+        null=True,
+        blank=True,
+        help_text="Icon name (e.g., fas fa-check)")
     type_status = models.ForeignKey(TypeStatus, on_delete=models.CASCADE)
 
     def __str__(self):

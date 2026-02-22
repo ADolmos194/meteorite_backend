@@ -21,9 +21,8 @@ class ExcelMasterHandler:
 
         response = HttpResponse(
             content_type=(
-                "application/vnd.openxmlformats-officedocument" ".spreadsheetml.sheet"
-            )
-        )
+                "application/vnd.openxmlformats-officedocument"
+                ".spreadsheetml.sheet"))
         response["Content-Disposition"] = (
             f'attachment; filename="plantilla_{self.filename_prefix}.xlsx"'
         )
@@ -52,16 +51,20 @@ class ExcelMasterHandler:
 
         response = HttpResponse(
             content_type=(
-                "application/vnd.openxmlformats-officedocument" ".spreadsheetml.sheet"
-            )
-        )
+                "application/vnd.openxmlformats-officedocument"
+                ".spreadsheetml.sheet"))
         response["Content-Disposition"] = (
             f'attachment; filename="{self.filename_prefix}_export.xlsx"'
         )
         wb.save(response)
         return response
 
-    def import_data(self, request, validator_func, field_mapping, audit_save_fn=None):
+    def import_data(
+            self,
+            request,
+            validator_func,
+            field_mapping,
+            audit_save_fn=None):
         file = request.FILES.get("file")
         dry_run = request.data.get("dry_run", "false").lower() == "true"
 
@@ -75,8 +78,12 @@ class ExcelMasterHandler:
         max_size = getattr(settings, "MAX_EXCEL_UPLOAD_SIZE", 5 * 1024 * 1024)
         if file.size > max_size:
             max_mb = max_size / (1024 * 1024)
+            err_msg = (
+                f"El archivo excede el tamaño máximo permitido "
+                f"({max_mb:.0f} MB)"
+            )
             return errorcall(
-                f"El archivo excede el tamaño máximo permitido ({max_mb:.0f} MB)",
+                err_msg,
                 status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             )
 
@@ -117,14 +124,17 @@ class ExcelMasterHandler:
             with transaction.atomic():
                 for i, row in enumerate(rows[1:], start=2):
                     data = {
-                        h: str(row[idx]).strip() if row[idx] is not None else ""
+                        h: (str(row[idx]).strip()
+                            if row[idx] is not None
+                            else "")
                         for h, idx in col_indices.items()
                     }
 
                     if not any(data.values()):
                         continue
 
-                    is_valid, error_map = validator_func(data, seen_unique_keys)
+                    is_valid, error_map = validator_func(
+                        data, seen_unique_keys)
 
                     # Guardar para previsualización con errores por campo
                     row_preview = {**data, "_row": i, "_errors": error_map}
@@ -140,16 +150,19 @@ class ExcelMasterHandler:
                             )
                     else:
                         if not dry_run:
-                            # Map Excel columns to model fields via field_mapping
+                            # Map Excel columns to model fields via
+                            # field_mapping
                             model_data = {
                                 field: data[excel_col]
                                 for excel_col, field in field_mapping.items()
                                 if excel_col in data
                             }
-                            # Merge validator-injected keys (e.g., key_country_id, status_id)
+                            # Merge validator-injected keys (e.g.,
+                            # key_country_id, status_id)
                             # that are NOT original Excel column names
                             for key, val in data.items():
-                                if key not in self.headers and key not in model_data:
+                                if (key not in self.headers and
+                                        key not in model_data):
                                     model_data[key] = val
 
                             model_data.update(
@@ -177,7 +190,8 @@ class ExcelMasterHandler:
                     )
 
                 if to_create:
-                    created_instances = self.model.objects.bulk_create(to_create)
+                    created_instances = self.model.objects.bulk_create(
+                        to_create)
                     if audit_save_fn:
                         for instance in created_instances:
                             audit_save_fn(instance)
@@ -188,7 +202,8 @@ class ExcelMasterHandler:
             )
 
         except Exception as e:
-            # If we are here, the transaction inside 'atomic' has been rolled back
+            # If we are here, the transaction inside 'atomic' has been rolled
+            # back
             return errorcall(
                 f"Error al procesar el archivo: {str(e)}",
                 status.HTTP_400_BAD_REQUEST,

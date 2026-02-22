@@ -8,10 +8,9 @@ from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.decorators import api_view, throttle_classes
-from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 
-from access.models import Menu, PermissionRole, Role, RoleMenu, UserRole
+from access.models import Menu, PermissionRole, RoleMenu, UserRole
 from config.utils import errorcall, succescall
 
 from .models import User, VerificationCode
@@ -35,7 +34,10 @@ from .utils import (
 
 
 class LoginRateThrottle(AnonRateThrottle):
-    """Throttle estricto para el endpoint de login: máx 10 intentos/minuto por IP."""
+    """
+    Throttle estricto para el endpoint de login:
+    máx 10 intentos/minuto por IP.
+    """
     scope = "login"
 
 
@@ -71,7 +73,8 @@ def get_user_session_data(user):
     Helper function to gather user info, menus, and permissions.
     """
     # 1. Obtener Roles del usuario
-    user_roles = UserRole.objects.filter(user_id=user.id).select_related("role")
+    user_roles = UserRole.objects.filter(
+        user_id=user.id).select_related("role")
     roles = [ur.role for ur in user_roles]
     role_names = [r.name for r in roles]
 
@@ -85,7 +88,9 @@ def get_user_session_data(user):
         role_menu_ids = RoleMenu.objects.filter(role__in=roles).values_list(
             "menu_id", flat=True
         )
-        allowed_menus = list(Menu.objects.filter(id__in=role_menu_ids).distinct())
+        allowed_menus = list(
+            Menu.objects.filter(
+                id__in=role_menu_ids).distinct())
 
     # 4. Obtener Permisos
     if is_all_permissions:
@@ -96,7 +101,8 @@ def get_user_session_data(user):
             "permission"
         )
         permisos_back = list(set([p.permission.name for p in perms]))
-        permisos_front = [{"action": "read", "subject": p} for p in permisos_back]
+        permisos_front = [{"action": "read", "subject": p}
+                          for p in permisos_back]
 
     return {
         "user_info": {
@@ -132,7 +138,8 @@ def session_view(request):
 @ensure_csrf_cookie
 @transaction.atomic
 def register_view(request):
-    # Política de limpieza: Eliminar usuarios inactivos previos con el mismo email o username
+    # Política de limpieza: Eliminar usuarios inactivos previos con el mismo
+    # email o username
     email = request.data.get("email")
     username = request.data.get("username")
     if email:
@@ -156,7 +163,9 @@ def register_view(request):
         try:
             send_mail(
                 subject="Verifica tu cuenta - Yachay Agro",
-                message=f"Tu código de verificación para Yachay Agro es: {code}",
+                message=(
+                    f"Tu código de verificación para Yachay Agro es: {code}"
+                ),
                 from_email=None,  # Usa DEFAULT_FROM_EMAIL de settings
                 recipient_list=[user.email],
                 fail_silently=True,
@@ -194,7 +203,8 @@ def verify_code_view(request):
             if verification.is_expired():
                 user.delete()
                 return errorcall(
-                    "Código expirado. Tu cuenta ha sido eliminada por seguridad, por favor regístrate de nuevo.",
+                    "Código expirado. Tu cuenta ha sido eliminada por "
+                    "seguridad, por favor regístrate de nuevo.",
                     status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -231,7 +241,9 @@ def login_view(request):
         user = User.objects.filter(username=username).first()
 
         if not user:
-            return errorcall(MSG_INVALID_CREDENTIALS, status.HTTP_401_UNAUTHORIZED)
+            return errorcall(
+                MSG_INVALID_CREDENTIALS,
+                status.HTTP_401_UNAUTHORIZED)
 
         # Verificar si está bloqueado por demasiados intentos (ejemplo: 5)
         if user.failed_login_attempts >= 5:
@@ -241,36 +253,48 @@ def login_view(request):
 
         if authenticated_user:
             if not authenticated_user.is_active:
-                # Verificar si el último código ya expiró antes de intentar auto-reenviar
+                # Verificar si el último código ya expiró antes de intentar
+                # auto-reenviar
                 last_verification = (
-                    VerificationCode.objects.filter(user=authenticated_user, is_used=False)
-                    .order_by("-created_at")
-                    .first()
-                )
+                    VerificationCode.objects.filter(
+                        user=authenticated_user,
+                        is_used=False) .order_by("-created_at") .first())
 
                 if last_verification and last_verification.is_expired():
                     authenticated_user.delete()
                     return errorcall(
-                        "Cuenta eliminada por falta de verificación oportuna. Regístrate de nuevo.",
+                        "Cuenta eliminada por falta de verificación "
+                        "oportuna. Regístrate de nuevo.",
                         status.HTTP_403_FORBIDDEN,
                     )
 
-                # Si no ha expirado o es la primera vez, auto-reenviar (o simplemente reenviar el mismo)
-                # Generar y enviar un nuevo código automáticamente al intentar login
-                code = "".join([secrets.choice("0123456789") for _ in range(6)])
-                VerificationCode.objects.create(user=authenticated_user, code=code)
+                # Si no ha expirado o es la primera vez, auto-reenviar (o
+                # simplemente reenviar el mismo)
+                # Generar y enviar un nuevo código automáticamente al intentar
+                # login
+                code = "".join([secrets.choice("0123456789")
+                               for _ in range(6)])
+                VerificationCode.objects.create(
+                    user=authenticated_user, code=code)
 
                 # Loguear en consola
-                print(f"DEBUG: Auto-reenviando código {code} al email {authenticated_user.email} tras intento de login")
+                print(
+                    f"DEBUG: Auto-reenviando código {code} al email "
+                    f"{authenticated_user.email} tras intento de login"
+                )
 
                 # Envío real de email
                 from django.core.mail import send_mail
                 try:
                     send_mail(
                         subject="Verifica tu cuenta - Yachay Agro",
-                        message=f"Has intentado iniciar sesión. Tu nuevo código de verificación es: {code}",
+                        message=(
+                            "Has intentado iniciar sesión. Tu nuevo código "
+                            f"de verificación es: {code}"
+                        ),
                         from_email=None,
-                        recipient_list=[authenticated_user.email],
+                        recipient_list=[
+                            authenticated_user.email],
                         fail_silently=True,
                     )
                 except Exception as e:
@@ -282,7 +306,9 @@ def login_view(request):
                     data={
                         "instruction": MSG_ENTER_CODE,
                         "email": authenticated_user.email,
-                        **({"debug_code": code} if os.getenv("DEBUG", "True") == "True" else {}),
+                        **({
+                            "debug_code": code
+                        } if os.getenv("DEBUG", "True") == "True" else {}),
                     },
                 )
 
@@ -307,7 +333,9 @@ def login_view(request):
             if user.failed_login_attempts >= 5:
                 return errorcall(MSG_USER_BLOCKED, status.HTTP_403_FORBIDDEN)
 
-            return errorcall(MSG_INVALID_CREDENTIALS, status.HTTP_401_UNAUTHORIZED)
+            return errorcall(
+                MSG_INVALID_CREDENTIALS,
+                status.HTTP_401_UNAUTHORIZED)
 
     return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
@@ -316,7 +344,8 @@ def login_view(request):
 def logout_view(request):
     logout(request)  # flush() de la sesión en BD + regenera session key
     response = succescall(None, "Cierre de sesión exitoso")
-    # Eliminar las cookies del cliente: al reingresar se genera una sesión nueva
+    # Eliminar las cookies del cliente: al reingresar se genera una sesión
+    # nueva
     response.delete_cookie("sessionid")
     response.delete_cookie("csrftoken")
     return response
@@ -332,8 +361,10 @@ def resend_code_view(request):
         user = User.objects.filter(email=email, is_active=False).first()
 
         if not user:
-            # Por seguridad, si el usuario no existe o ya está activo, no damos pistas extras
-            return succescall(None, "Si el correo es válido, recibirás un nuevo código.")
+            # Por seguridad, si el usuario no existe o ya está activo, no damos
+            # pistas extras
+            return succescall(
+                None, "Si el correo es válido, recibirás un nuevo código.")
 
         # Generar nuevo código
         code = "".join([secrets.choice("0123456789") for _ in range(6)])
@@ -356,11 +387,10 @@ def resend_code_view(request):
         except Exception as e:
             print(f"ERROR reenviando email: {e}")
 
-        return succescall(
-            {
-                **({"debug_code": code} if os.getenv("DEBUG", "True") == "True" else {}),
-            },
-            "Nuevo código enviado con éxito",
-        )
+        response_data = {}
+        if os.getenv("DEBUG", "True") == "True":
+            response_data["debug_code"] = code
+
+        return succescall(response_data, "Nuevo código enviado con éxito")
 
     return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)

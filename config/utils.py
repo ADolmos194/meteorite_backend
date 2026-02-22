@@ -3,7 +3,7 @@ from functools import wraps
 from rest_framework import status
 from rest_framework.response import Response
 
-from access.models import Permission, PermissionRole, UserRole
+from access.models import PermissionRole, UserRole
 
 # ---------------------------------------------------------
 # CONSTANTES DE ESTADO (UUIDs)
@@ -82,9 +82,8 @@ def warningresponse(message="Advertencia de negocio"):
 def errorcall(
     message="Error crítico", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
 ):
-    return Response(
-        {"status": "error", "message": message, "data": None}, status=status_code
-    )
+    return Response({"status": "error", "message": message,
+                     "data": None}, status=status_code)
 
 
 def errorresponse(
@@ -101,7 +100,9 @@ def MiddlewareAutentication(decorator_name):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
             if not request.user.is_authenticated:
-                return errorcall("No autenticado", status.HTTP_401_UNAUTHORIZED)
+                return errorcall(
+                    "No autenticado",
+                    status.HTTP_401_UNAUTHORIZED)
 
             # 1. Obtener Roles del usuario
             user_roles = UserRole.objects.filter(
@@ -125,7 +126,8 @@ def MiddlewareAutentication(decorator_name):
                 return view_func(request, *args, **kwargs)
 
             return errorcall(
-                f"No tiene permisos para realizar esta acción ({decorator_name})",
+                "No tiene permisos para realizar esta acción "
+                f"({decorator_name})",
                 status.HTTP_403_FORBIDDEN,
             )
 
