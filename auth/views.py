@@ -7,14 +7,20 @@ from django.middleware.csrf import get_token
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 
 from access.models import Menu, PermissionRole, Role, RoleMenu, UserRole
 from config.utils import errorcall, succescall
 
 from .models import User, VerificationCode
-from .serializers import LoginSerializer, UserRegisterSerializer, VerifyCodeSerializer
+from .serializers import (
+    LoginSerializer,
+    ResendCodeSerializer,
+    UserRegisterSerializer,
+    VerifyCodeSerializer,
+)
 from .utils import (
     MSG_ACCOUNT_CREATED,
     MSG_CODE_VERIFIED,
@@ -26,6 +32,11 @@ from .utils import (
     MSG_USER_BLOCKED,
     MSG_USER_INACTIVE,
 )
+
+
+class LoginRateThrottle(AnonRateThrottle):
+    """Throttle estricto para el endpoint de login: máx 10 intentos/minuto por IP."""
+    scope = "login"
 
 
 def build_menu_tree(menus, parent=None):
@@ -121,6 +132,14 @@ def session_view(request):
 @ensure_csrf_cookie
 @transaction.atomic
 def register_view(request):
+    # Política de limpieza: Eliminar usuarios inactivos previos con el mismo email o username
+    email = request.data.get("email")
+    username = request.data.get("username")
+    if email:
+        User.objects.filter(email=email, is_active=False).delete()
+    if username:
+        User.objects.filter(username=username, is_active=False).delete()
+
     serializer = UserRegisterSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
@@ -132,10 +151,26 @@ def register_view(request):
         # Simulación de envío de email (loguear en consola)
         print(f"DEBUG: Enviando código {code} al email {user.email}")
 
+        # Envío real de email
+        from django.core.mail import send_mail
+        try:
+            send_mail(
+                subject="Verifica tu cuenta - Yachay Agro",
+                message=f"Tu código de verificación para Yachay Agro es: {code}",
+                from_email=None,  # Usa DEFAULT_FROM_EMAIL de settings
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"ERROR enviando email: {e}")
+
         return succescall(
             {
                 "instruction": MSG_ENTER_CODE,
-                "debug_code": code,  # Devuelto para facilitar pruebas
+                # Solo exponer el código en modo DEBUG (nunca en producción)
+                **({
+                    "debug_code": code
+                } if os.getenv("DEBUG", "True") == "True" else {}),
             },
             MSG_ACCOUNT_CREATED,
         )
@@ -157,7 +192,11 @@ def verify_code_view(request):
             ).latest("created_at")
 
             if verification.is_expired():
-                return errorcall(MSG_INVALID_CODE, status.HTTP_400_BAD_REQUEST)
+                user.delete()
+                return errorcall(
+                    "Código expirado. Tu cuenta ha sido eliminada por seguridad, por favor regístrate de nuevo.",
+                    status.HTTP_400_BAD_REQUEST,
+                )
 
             # Activar usuario
             user.is_active = True
@@ -177,6 +216,7 @@ def verify_code_view(request):
 
 @api_view(["POST"])
 @ensure_csrf_cookie
+@throttle_classes([LoginRateThrottle])
 def login_view(request):
     serializer = LoginSerializer(data=request.data)
     if serializer.is_valid():
@@ -201,7 +241,50 @@ def login_view(request):
 
         if authenticated_user:
             if not authenticated_user.is_active:
-                return errorcall(MSG_USER_INACTIVE, status.HTTP_403_FORBIDDEN)
+                # Verificar si el último código ya expiró antes de intentar auto-reenviar
+                last_verification = (
+                    VerificationCode.objects.filter(user=authenticated_user, is_used=False)
+                    .order_by("-created_at")
+                    .first()
+                )
+
+                if last_verification and last_verification.is_expired():
+                    authenticated_user.delete()
+                    return errorcall(
+                        "Cuenta eliminada por falta de verificación oportuna. Regístrate de nuevo.",
+                        status.HTTP_403_FORBIDDEN,
+                    )
+
+                # Si no ha expirado o es la primera vez, auto-reenviar (o simplemente reenviar el mismo)
+                # Generar y enviar un nuevo código automáticamente al intentar login
+                code = "".join([secrets.choice("0123456789") for _ in range(6)])
+                VerificationCode.objects.create(user=authenticated_user, code=code)
+
+                # Loguear en consola
+                print(f"DEBUG: Auto-reenviando código {code} al email {authenticated_user.email} tras intento de login")
+
+                # Envío real de email
+                from django.core.mail import send_mail
+                try:
+                    send_mail(
+                        subject="Verifica tu cuenta - Yachay Agro",
+                        message=f"Has intentado iniciar sesión. Tu nuevo código de verificación es: {code}",
+                        from_email=None,
+                        recipient_list=[authenticated_user.email],
+                        fail_silently=True,
+                    )
+                except Exception as e:
+                    print(f"ERROR auto-reenviando email: {e}")
+
+                return errorcall(
+                    MSG_USER_INACTIVE,
+                    status.HTTP_403_FORBIDDEN,
+                    data={
+                        "instruction": MSG_ENTER_CODE,
+                        "email": authenticated_user.email,
+                        **({"debug_code": code} if os.getenv("DEBUG", "True") == "True" else {}),
+                    },
+                )
 
             # Éxito: crear sesión de Django
             login(request, authenticated_user)
@@ -231,5 +314,53 @@ def login_view(request):
 
 @api_view(["POST"])
 def logout_view(request):
-    logout(request)
-    return succescall(None, "Cierre de sesión exitoso")
+    logout(request)  # flush() de la sesión en BD + regenera session key
+    response = succescall(None, "Cierre de sesión exitoso")
+    # Eliminar las cookies del cliente: al reingresar se genera una sesión nueva
+    response.delete_cookie("sessionid")
+    response.delete_cookie("csrftoken")
+    return response
+
+
+@api_view(["POST"])
+@ensure_csrf_cookie
+@transaction.atomic
+def resend_code_view(request):
+    serializer = ResendCodeSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data["email"]
+        user = User.objects.filter(email=email, is_active=False).first()
+
+        if not user:
+            # Por seguridad, si el usuario no existe o ya está activo, no damos pistas extras
+            return succescall(None, "Si el correo es válido, recibirás un nuevo código.")
+
+        # Generar nuevo código
+        code = "".join([secrets.choice("0123456789") for _ in range(6)])
+        VerificationCode.objects.create(user=user, code=code)
+
+        # Loguear en consola
+        print(f"DEBUG: Reenviando código {code} al email {user.email}")
+
+        # Envío real de email
+        from django.core.mail import send_mail
+
+        try:
+            send_mail(
+                subject="Tu nuevo código - Yachay Agro",
+                message=f"Tu nuevo código de verificación es: {code}",
+                from_email=None,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"ERROR reenviando email: {e}")
+
+        return succescall(
+            {
+                **({"debug_code": code} if os.getenv("DEBUG", "True") == "True" else {}),
+            },
+            "Nuevo código enviado con éxito",
+        )
+
+    return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)

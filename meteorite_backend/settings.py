@@ -12,9 +12,13 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Cargar variables de entorno desde .env
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 
 # Quick-start development settings - unsuitable for production
@@ -68,6 +72,15 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS", "Fa
 SECURE_HSTS_PRELOAD = os.getenv("SECURE_HSTS_PRELOAD", "False") == "True"
 SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False") == "True"
 CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "False") == "True"
+
+# Configuración de expiración de sesión
+# SESSION_COOKIE_AGE: tiempo de vida de la cookie en segundos (default 1 hora)
+SESSION_COOKIE_AGE = int(os.getenv("SESSION_COOKIE_AGE", str(60 * 60)))  # 3600s = 1h
+# Con True: el timer se reinicia en cada request (timeout de INACTIVIDAD)
+# Con False: la sesión expira 1h exacta desde el login sin importar actividad
+SESSION_SAVE_EVERY_REQUEST = os.getenv("SESSION_SAVE_EVERY_REQUEST", "True") == "True"
+# Con True: la sesión expira al cerrar el browser (ignora SESSION_COOKIE_AGE)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = os.getenv("SESSION_EXPIRE_AT_BROWSER_CLOSE", "False") == "True"
 
 # Solo añadir WhiteNoise si no estamos en DEBUG o si está instalado
 try:
@@ -171,10 +184,15 @@ if not CORS_ALLOW_ALL_ORIGINS:
     CORS_ALLOWED_ORIGINS = [o for o in CORS_ALLOWED_ORIGINS if o]
 
 CSRF_COOKIE_HTTPONLY = False  # Permitir que el frontend lea la cookie CSRF
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+_csrf_env = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = (
+    [o.strip() for o in _csrf_env.split(",") if o.strip()]
+    if _csrf_env
+    else [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -187,5 +205,18 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": os.getenv("THROTTLE_RATE_ANON", "100/day"),
         "user": os.getenv("THROTTLE_RATE_USER", "1000/day"),
+        # Rate limit estricto para el endpoint de login (por IP, sin autenticar)
+        "login": os.getenv("THROTTLE_RATE_LOGIN", "10/minute"),
     },
 }
+
+# Tamaño máximo permitido para imports de Excel (en bytes). Default: 5 MB.
+MAX_EXCEL_UPLOAD_SIZE = int(os.getenv("MAX_EXCEL_UPLOAD_SIZE", str(5 * 1024 * 1024)))
+# Configuración de Email (SMTP)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Yachay Agro <noreply@yachayagro.com>")

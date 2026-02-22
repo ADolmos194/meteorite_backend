@@ -28,3 +28,7 @@ class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
     system = serializers.CharField()
+
+
+class ResendCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
