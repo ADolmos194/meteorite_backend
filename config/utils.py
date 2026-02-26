@@ -2,6 +2,7 @@ from functools import wraps
 
 from rest_framework import status
 from rest_framework.response import Response
+from django.http import JsonResponse
 
 from access.models import PermissionRole, UserRole
 
@@ -100,9 +101,10 @@ def MiddlewareAutentication(decorator_name):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
             if not request.user.is_authenticated:
-                return errorcall(
-                    "No autenticado",
-                    status.HTTP_401_UNAUTHORIZED)
+                return JsonResponse(
+                    {"status": "error", "message": "No autenticado", "data": None},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
 
             # 1. Obtener Roles del usuario
             user_roles = UserRole.objects.filter(
@@ -125,10 +127,13 @@ def MiddlewareAutentication(decorator_name):
             if has_permission:
                 return view_func(request, *args, **kwargs)
 
-            return errorcall(
-                "No tiene permisos para realizar esta acción "
-                f"({decorator_name})",
-                status.HTTP_403_FORBIDDEN,
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": f"No tiene permisos para realizar esta acción ({decorator_name})",
+                    "data": None
+                },
+                status=status.HTTP_403_FORBIDDEN
             )
 
         return _wrapped_view

@@ -257,8 +257,8 @@ def department_annul_view(request):
 
 
 @extend_schema(request=None, responses={200: AuditLogSerializer(many=True)})
-@api_view(["POST"])
 @MiddlewareAutentication("general_master_department_log")
+@api_view(["POST"])
 def department_log_view(request):
     pk = request.data.get("id")
     page = int(request.data.get("page", 1))
