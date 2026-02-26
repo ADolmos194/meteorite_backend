@@ -5,6 +5,10 @@
 build:
 	docker-compose build
 
+sync-deps:
+	docker-compose build --no-cache web
+	docker-compose up -d web
+
 up:
 	docker-compose up -d
 

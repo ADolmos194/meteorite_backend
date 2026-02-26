@@ -2,6 +2,7 @@ import copy
 from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import api_view
+from drf_spectacular.utils import extend_schema, OpenApiTypes
 
 from config.excel_handler import ExcelMasterHandler
 from config.utils import (
@@ -32,6 +33,7 @@ from audit.models import AuditLog, AuditLogDetail
 from audit.serializers import AuditLogSerializer, AuditLogDetailSerializer
 
 
+@extend_schema(request=None, responses={200: DepartmentSerializer(many=True)})
 @MiddlewareAutentication("general_master_department_get")
 @api_view(["POST"])
 def department_get_view(request):
@@ -68,6 +70,8 @@ def department_get_view(request):
     )
 
 
+@extend_schema(
+    request=DepartmentSerializer, responses={201: DepartmentSerializer})
 @api_view(["POST"])
 @MiddlewareAutentication("general_master_department_create")
 def department_create_view(request):
@@ -106,6 +110,8 @@ def department_create_view(request):
     return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    request=DepartmentSerializer, responses={200: DepartmentSerializer})
 @api_view(["PATCH"])
 @MiddlewareAutentication("general_master_department_update")
 def department_update_view(request):
@@ -151,6 +157,7 @@ def department_update_view(request):
     return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["PATCH"])
 @MiddlewareAutentication("general_master_department_inactivate")
 def department_inactivate_view(request):
@@ -183,6 +190,7 @@ def department_inactivate_view(request):
     return succescall(None, f"{count} departamentos inactivados correctamente")
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["PATCH"])
 @MiddlewareAutentication("general_master_department_restore")
 def department_restore_view(request):
@@ -215,6 +223,7 @@ def department_restore_view(request):
     return succescall(None, f"{count} departamentos restaurados correctamente")
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["PATCH"])
 @MiddlewareAutentication("general_master_department_annul")
 def department_annul_view(request):
@@ -247,6 +256,7 @@ def department_annul_view(request):
     return succescall(None, f"{count} departamentos anulados correctamente")
 
 
+@extend_schema(request=None, responses={200: AuditLogSerializer(many=True)})
 @api_view(["POST"])
 @MiddlewareAutentication("general_master_department_log")
 def department_log_view(request):
@@ -270,6 +280,9 @@ def department_log_view(request):
         "Logs del departamento obtenidos correctamente")
 
 
+@extend_schema(
+    request=None,
+    responses={200: AuditLogDetailSerializer(many=True)})
 @api_view(["POST"])
 @MiddlewareAutentication("general_master_department_log_detail")
 def department_log_detail_view(request):
@@ -291,6 +304,7 @@ def department_log_detail_view(request):
         "Detalles del log obtenidos correctamente")
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["GET"])
 @MiddlewareAutentication("general_master_department_export")
 def department_export_view(request):
@@ -313,6 +327,7 @@ def department_export_view(request):
     return handler.export_data(depts, DepartmentSerializer, field_mapping)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["GET"])
 @MiddlewareAutentication("general_master_department_template")
 def department_template_view(request):
@@ -325,6 +340,7 @@ def department_template_view(request):
     return handler.generate_template()
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["POST"])
 @MiddlewareAutentication("general_master_department_import")
 @transaction.atomic

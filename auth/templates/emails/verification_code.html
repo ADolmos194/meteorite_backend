@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+            padding: 30px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px;
+            text-align: center;
+        }
+        .content p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        .code-container {
+            background-color: #f0f4f8;
+            border: 2px dashed #1a73e8;
+            border-radius: 8px;
+            padding: 20px;
+            display: inline-block;
+            margin: 10px 0 30px 0;
+        }
+        .code {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a73e8;
+            letter-spacing: 5px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eeeeee;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #1a73e8;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Yachay Agro</h1>
+        </div>
+        <div class="content">
+            <h2>Verifica tu cuenta</h2>
+            <p>¡Gracias por registrarte! Para completar tu registro, por favor ingresa el siguiente código de verificación en la aplicación:</p>
+            <div class="code-container">
+                <span class="code">{{ code }}</span>
+            </div>
+            <p>Este código expirará pronto. Si no solicitaste este código, puedes ignorar este mensaje.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Yachay Agro. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>

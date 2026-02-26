@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
+from drf_spectacular.utils import extend_schema
 
 from .models import Status
 from .serializers import StatusSerializer
@@ -8,6 +9,7 @@ from .utils import errorcall, succescall
 # Create your views here.
 
 
+@extend_schema(responses={200: StatusSerializer(many=True)})
 @api_view(["GET"])
 def get_all_statuses(request):
     """

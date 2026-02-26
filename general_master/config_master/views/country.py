@@ -2,6 +2,7 @@ import copy
 from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import api_view
+from drf_spectacular.utils import extend_schema, OpenApiTypes
 
 from config.excel_handler import ExcelMasterHandler
 from config.utils import (
@@ -32,6 +33,7 @@ from audit.models import AuditLog, AuditLogDetail
 from audit.serializers import AuditLogSerializer, AuditLogDetailSerializer
 
 
+@extend_schema(request=None, responses={200: CountrySerializer(many=True)})
 @MiddlewareAutentication("general_master_country_get")
 @api_view(["POST"])
 def country_get_view(request):
@@ -62,6 +64,7 @@ def country_get_view(request):
     )
 
 
+@extend_schema(responses={200: CountrySerializer(many=True)})
 @MiddlewareAutentication("general_master_country_get")
 @api_view(["GET"])
 def country_select_view(request):
@@ -79,6 +82,7 @@ def country_select_view(request):
     )
 
 
+@extend_schema(request=CountrySerializer, responses={201: CountrySerializer})
 @api_view(["POST"])
 @MiddlewareAutentication("general_master_country_create")
 def country_create_view(request):
@@ -116,6 +120,7 @@ def country_create_view(request):
     return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(request=CountrySerializer, responses={200: CountrySerializer})
 @api_view(["PATCH"])
 @MiddlewareAutentication("general_master_country_update")
 def country_update_view(request):
@@ -162,6 +167,7 @@ def country_update_view(request):
     return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["PATCH"])
 @MiddlewareAutentication("general_master_country_inactivate")
 def country_inactivate_view(request):
@@ -192,6 +198,7 @@ def country_inactivate_view(request):
     return succescall(None, f"{count} países inactivados correctamente")
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["PATCH"])
 @MiddlewareAutentication("general_master_country_restore")
 def country_restore_view(request):
@@ -222,6 +229,7 @@ def country_restore_view(request):
     return succescall(None, f"{count} países restaurados correctamente")
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["PATCH"])
 @MiddlewareAutentication("general_master_country_annul")
 def country_annul_view(request):
@@ -252,6 +260,7 @@ def country_annul_view(request):
     return succescall(None, f"{count} países anulados correctamente")
 
 
+@extend_schema(request=None, responses={200: AuditLogSerializer(many=True)})
 @MiddlewareAutentication("general_master_country_log")
 @api_view(["POST"])
 def country_log_view(request):
@@ -271,6 +280,9 @@ def country_log_view(request):
     return succescall(serializer.data, "Logs del país obtenidos correctamente")
 
 
+@extend_schema(
+    request=None,
+    responses={200: AuditLogDetailSerializer(many=True)})
 @MiddlewareAutentication("general_master_country_log_detail")
 @api_view(["POST"])
 def country_log_detail_view(request):
@@ -292,6 +304,7 @@ def country_log_detail_view(request):
         "Detalles del log obtenidos correctamente")
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["GET"])
 @MiddlewareAutentication("general_master_country_export")
 def country_export_view(request):
@@ -320,6 +333,7 @@ def country_export_view(request):
     return handler.export_data(countries, CountrySerializer, field_mapping)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["GET"])
 @MiddlewareAutentication("general_master_country_template")
 def country_template_view(request):
@@ -335,6 +349,7 @@ def country_template_view(request):
     return handler.generate_template()
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["POST"])
 @MiddlewareAutentication("general_master_country_import")
 @transaction.atomic

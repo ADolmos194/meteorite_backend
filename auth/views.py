@@ -9,8 +9,11 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.throttling import AnonRateThrottle
+from django.core.mail import send_mail
+from drf_spectacular.utils import extend_schema, OpenApiTypes
 
 from access.models import Menu, PermissionRole, RoleMenu, UserRole
+from django.template.loader import render_to_string
 from config.utils import errorcall, succescall
 
 from .models import User, VerificationCode
@@ -72,54 +75,74 @@ def get_user_session_data(user):
     """
     Helper function to gather user info, menus, and permissions.
     """
-    # 1. Obtener Roles del usuario
-    user_roles = UserRole.objects.filter(
-        user_id=user.id).select_related("role")
-    roles = [ur.role for ur in user_roles]
-    role_names = [r.name for r in roles]
+    try:
+        # 1. Obtener Roles del usuario
+        user_roles = UserRole.objects.filter(
+            user_id=user.id).select_related("role")
+        roles = [ur.role for ur in user_roles]
+        role_names = [r.name for r in roles]
 
-    # 2. Verificar si es Superusuario o tiene "ALL PERMISSIONS"
-    is_all_permissions = "ALL PERMISSIONS" in role_names or user.is_admin
+        # 2. Verificar si es Superusuario o tiene "ALL PERMISSIONS"
+        is_all_permissions = "ALL PERMISSIONS" in role_names or user.is_admin
 
-    # 3. Obtener Menús permitidos
-    if is_all_permissions:
-        allowed_menus = list(Menu.objects.all())
-    else:
-        role_menu_ids = RoleMenu.objects.filter(role__in=roles).values_list(
-            "menu_id", flat=True
-        )
-        allowed_menus = list(
-            Menu.objects.filter(
-                id__in=role_menu_ids).distinct())
+        # 3. Obtener Menús permitidos
+        if is_all_permissions:
+            allowed_menus = list(Menu.objects.all())
+        else:
+            role_menu_ids = RoleMenu.objects.filter(
+                role__in=roles).values_list("menu_id", flat=True)
+            allowed_menus = list(
+                Menu.objects.filter(
+                    id__in=role_menu_ids).distinct())
 
-    # 4. Obtener Permisos
-    if is_all_permissions:
-        permisos_back = ["ALL_PERMISSIONS"]
-        permisos_front = [{"action": "manage", "subject": "all"}]
-    else:
-        perms = PermissionRole.objects.filter(role__in=roles).select_related(
-            "permission"
-        )
-        permisos_back = list(set([p.permission.name for p in perms]))
-        permisos_front = [{"action": "read", "subject": p}
-                          for p in permisos_back]
+        # 4. Obtener Permisos
+        if is_all_permissions:
+            permisos_back = ["ALL_PERMISSIONS"]
+            permisos_front = [{"action": "manage", "subject": "all"}]
+        else:
+            perms = PermissionRole.objects.filter(
+                role__in=roles).select_related("permission")
+            permisos_back = list(set([p.permission.name for p in perms]))
+            permisos_front = [{"action": "read", "subject": p}
+                              for p in permisos_back]
 
-    return {
-        "user_info": {
-            "id": str(user.id),
-            "username": user.username,
-            "name": user.first_name,
-            "last_name": user.last_name,
-            "email": user.email,
-            "dni": user.dni or "",
-            "role": is_all_permissions,
-            "menu": build_menu_tree(allowed_menus),
-            "permisos_front": permisos_front,
-            "permisos_back": permisos_back,
+        return {
+            "user_info": {
+                "id": str(user.id),
+                "username": user.username,
+                "name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "dni": user.dni or "",
+                "role": is_all_permissions,
+                "menu": build_menu_tree(allowed_menus),
+                "permisos_front": permisos_front,
+                "permisos_back": permisos_back,
+            }
         }
-    }
+    except Exception as e:
+        print(f"ERROR gathering session data for user {user.username}: {e}")
+        # Retornar datos mínimos para evitar que la app crashee
+        return {
+            "user_info": {
+                "id": str(user.id),
+                "username": user.username,
+                "name": user.first_name,
+                "last_name": user.last_name,
+                "email": user.email,
+                "dni": user.dni or "",
+                "role": False,
+                "menu": [],
+                "permisos_front": [],
+                "permisos_back": [],
+            }
+        }
 
 
+@extend_schema(
+    responses={200: LoginSerializer},
+    description="Returns user info if the session is valid."
+)
 @api_view(["GET"])
 @ensure_csrf_cookie
 def session_view(request):
@@ -134,6 +157,11 @@ def session_view(request):
     return succescall(data, "Sesión válida")
 
 
+@extend_schema(
+    request=UserRegisterSerializer,
+    responses={201: UserRegisterSerializer},
+    description="Register a new user."
+)
 @api_view(["POST"])
 @ensure_csrf_cookie
 @transaction.atomic
@@ -159,15 +187,20 @@ def register_view(request):
         print(f"DEBUG: Enviando código {code} al email {user.email}")
 
         # Envío real de email
-        from django.core.mail import send_mail
         try:
+            # Preparar contenido HTML y texto plano
+            context = {"code": code, "user": user}
+            html_message = render_to_string(
+                "emails/verification_code.html", context)
+            plain_message = (
+                f"Tu código de verificación para Yachay Agro es: {code}")
+
             send_mail(
                 subject="Verifica tu cuenta - Yachay Agro",
-                message=(
-                    f"Tu código de verificación para Yachay Agro es: {code}"
-                ),
+                message=plain_message,
                 from_email=None,  # Usa DEFAULT_FROM_EMAIL de settings
                 recipient_list=[user.email],
+                html_message=html_message,
                 fail_silently=True,
             )
         except Exception as e:
@@ -186,6 +219,11 @@ def register_view(request):
     return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    request=VerifyCodeSerializer,
+    responses={200: OpenApiTypes.STR},
+    description="Verify the registration code."
+)
 @api_view(["POST"])
 @ensure_csrf_cookie
 def verify_code_view(request):
@@ -224,6 +262,11 @@ def verify_code_view(request):
     return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    request=LoginSerializer,
+    responses={200: LoginSerializer},
+    description="Authenticate user and create session."
+)
 @api_view(["POST"])
 @ensure_csrf_cookie
 @throttle_classes([LoginRateThrottle])
@@ -284,17 +327,22 @@ def login_view(request):
                 )
 
                 # Envío real de email
-                from django.core.mail import send_mail
                 try:
+                    # Preparar contenido HTML y texto plano
+                    context = {"code": code, "user": authenticated_user}
+                    html_message = render_to_string(
+                        "emails/verification_code.html", context)
+                    plain_message = (
+                        "Has intentado iniciar sesión. Tu nuevo código "
+                        f"de verificación es: {code}"
+                    )
+
                     send_mail(
                         subject="Verifica tu cuenta - Yachay Agro",
-                        message=(
-                            "Has intentado iniciar sesión. Tu nuevo código "
-                            f"de verificación es: {code}"
-                        ),
+                        message=plain_message,
                         from_email=None,
-                        recipient_list=[
-                            authenticated_user.email],
+                        recipient_list=[authenticated_user.email],
+                        html_message=html_message,
                         fail_silently=True,
                     )
                 except Exception as e:
@@ -340,6 +388,7 @@ def login_view(request):
     return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(request=None, responses={200: OpenApiTypes.STR})
 @api_view(["POST"])
 def logout_view(request):
     logout(request)  # flush() de la sesión en BD + regenera session key
@@ -351,18 +400,26 @@ def logout_view(request):
     return response
 
 
+@extend_schema(request=ResendCodeSerializer, responses={200: OpenApiTypes.STR})
 @api_view(["POST"])
 @ensure_csrf_cookie
 @transaction.atomic
 def resend_code_view(request):
     serializer = ResendCodeSerializer(data=request.data)
     if serializer.is_valid():
-        email = serializer.validated_data["email"]
-        user = User.objects.filter(email=email, is_active=False).first()
+        email = serializer.validated_data["email"].strip().lower()
+        print(f"DEBUG: Intentando reenviar código para: '{email}'")
+        user = User.objects.filter(email__iexact=email).first()
 
         if not user:
-            # Por seguridad, si el usuario no existe o ya está activo, no damos
-            # pistas extras
+            print(f"DEBUG: No se encontró usuario con email: '{email}'")
+            return succescall(
+                None, "Si el correo es válido, recibirás un nuevo código.")
+
+        if user.is_active:
+            print(
+                f"DEBUG: El usuario '{email}' ya está activo. "
+                "Evitando reenvío.")
             return succescall(
                 None, "Si el correo es válido, recibirás un nuevo código.")
 
@@ -370,22 +427,28 @@ def resend_code_view(request):
         code = "".join([secrets.choice("0123456789") for _ in range(6)])
         VerificationCode.objects.create(user=user, code=code)
 
-        # Loguear en consola
-        print(f"DEBUG: Reenviando código {code} al email {user.email}")
-
-        # Envío real de email
-        from django.core.mail import send_mail
-
         try:
+            # Preparar contenido HTML y texto plano
+            context = {"code": code, "user": user}
+            html_message = render_to_string(
+                "emails/verification_code.html", context)
+            plain_message = f"Tu nuevo código de verificación es: {code}"
+
             send_mail(
                 subject="Tu nuevo código - Yachay Agro",
-                message=f"Tu nuevo código de verificación es: {code}",
+                message=plain_message,
                 from_email=None,
                 recipient_list=[user.email],
-                fail_silently=True,
+                html_message=html_message,
+                fail_silently=False,
             )
         except Exception as e:
-            print(f"ERROR reenviando email: {e}")
+            print(f"ERROR CRÍTICO reenviando email a {email}: {e}")
+            return errorcall(
+                "Error al enviar el correo. "
+                "Por favor, intenta de nuevo más tarde.",
+                status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         response_data = {}
         if os.getenv("DEBUG", "True") == "True":

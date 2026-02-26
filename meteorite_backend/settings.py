@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -36,6 +38,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -52,6 +55,7 @@ INSTALLED_APPS = [
     "general_master.agricultural.apps.AgriculturalConfig",
     "general_master.config_master.apps.ConfigMasterConfig",
     "corsheaders",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -98,6 +102,7 @@ except ImportError:
     HAS_WHITENOISE = False
 
 ROOT_URLCONF = "meteorite_backend.urls"
+ASGI_APPLICATION = "meteorite_backend.asgi.application"
 
 TEMPLATES = [
     {
@@ -120,16 +125,31 @@ WSGI_APPLICATION = "meteorite_backend.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB"),
-        "USER": os.getenv("POSTGRES_USER"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-        "HOST": os.getenv("POSTGRES_HOST"),
-        "PORT": os.getenv("POSTGRES_PORT"),
+# Database Selection (Local vs Production)
+DATABASE_ENV = os.getenv("DATABASE_ENV", "local").lower()
+
+if DATABASE_ENV == "production":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB_PROD"),
+            "USER": os.getenv("POSTGRES_USER_PROD"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD_PROD"),
+            "HOST": os.getenv("POSTGRES_HOST_PROD"),
+            "PORT": os.getenv("POSTGRES_PORT_PROD"),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB"),
+            "USER": os.getenv("POSTGRES_USER"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+            "HOST": os.getenv("POSTGRES_HOST"),
+            "PORT": os.getenv("POSTGRES_PORT"),
+        }
+    }
 
 
 # Password validation
@@ -220,7 +240,34 @@ REST_FRAMEWORK = {
         # autenticar)
         "login": os.getenv("THROTTLE_RATE_LOGIN", "10/minute"),
     },
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [os.getenv("REDIS_URL", "redis://localhost:6379/0")],
+        },
+    },
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Meteorito API",
+    "DESCRIPTION": "API para el sistema Meteorito / Yachay Agro",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
+
+# Inicialización de Sentry
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=1.0,
+        send_default_pii=True,
+    )
 
 # Tamaño máximo permitido para imports de Excel (en bytes). Default: 5 MB.
 MAX_EXCEL_UPLOAD_SIZE = int(
@@ -237,3 +284,17 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
 DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL",
     "Yachay Agro <noreply@yachayagro.com>")
+
+# Silenciar advertencias de seguridad en local si se solicita explícitamente
+# Esto permite una validación limpia localmente sin comprometer la
+# seguridad en producción.
+if os.getenv("SKIP_DEPLOY_CHECKS", "False") == "True":
+    SILENCED_SYSTEM_CHECKS = [
+        "security.W004",  # SECURE_HSTS_SECONDS
+        "security.W008",  # SECURE_SSL_REDIRECT
+        "security.W012",  # SESSION_COOKIE_SECURE
+        "security.W016",  # CSRF_COOKIE_SECURE
+        "security.W018",  # DEBUG=True
+    ]
+else:
+    SILENCED_SYSTEM_CHECKS = []

@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import AuditLog, AuditLogDetail
 from auth.models import User
 
@@ -16,6 +17,7 @@ class AuditLogSerializer(serializers.ModelSerializer):
         model = AuditLog
         fields = '__all__'
 
+    @extend_schema_field(serializers.CharField())
     def get_user_name(self, obj):
         try:
             user = User.objects.get(id=obj.key_user)
