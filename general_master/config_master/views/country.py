@@ -261,8 +261,8 @@ def country_annul_view(request):
 
 
 @extend_schema(request=None, responses={200: AuditLogSerializer(many=True)})
-@MiddlewareAutentication("general_master_country_log")
 @api_view(["POST"])
+@MiddlewareAutentication("general_master_country_log")
 def country_log_view(request):
     pk = request.data.get("id")
     page = int(request.data.get("page", 1))
@@ -299,8 +299,8 @@ def country_log_view(request):
 @extend_schema(
     request=None,
     responses={200: AuditLogDetailSerializer(many=True)})
-@MiddlewareAutentication("general_master_country_log_detail")
 @api_view(["POST"])
+@MiddlewareAutentication("general_master_country_log_detail")
 def country_log_detail_view(request):
     pk = request.data.get("id")
     if not pk:
