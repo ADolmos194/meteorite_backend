@@ -261,6 +261,9 @@ def department_annul_view(request):
 @MiddlewareAutentication("general_master_department_log")
 def department_log_view(request):
     pk = request.data.get("id")
+    page = int(request.data.get("page", 1))
+    page_size = min(int(request.data.get("page_size", 10)), 200)
+
     if not pk:
         return errorcall("ID no proporcionado", status.HTTP_400_BAD_REQUEST)
 
@@ -270,14 +273,25 @@ def department_log_view(request):
             "Departamento no encontrado",
             status.HTTP_404_NOT_FOUND)
 
-    logs = AuditLog.objects.filter(
+    qs = AuditLog.objects.filter(
         record_id=pk,
         name_table=Department._meta.db_table
     ).order_by("-created_at")
-    serializer = AuditLogSerializer(logs, many=True)
+
+    total = qs.count()
+    start = (page - 1) * page_size
+    end = start + page_size
+    serializer = AuditLogSerializer(qs[start:end], many=True)
+
     return succescall(
-        serializer.data,
-        "Logs del departamento obtenidos correctamente")
+        {
+            "results": serializer.data,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        },
+        "Logs del departamento obtenidos correctamente"
+    )
 
 
 @extend_schema(
