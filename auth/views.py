@@ -142,7 +142,7 @@ def session_view(request):
     description="Register a new user."
 )
 @api_view(["POST"])
-@ensure_csrf_cookie
+@csrf_exempt
 @transaction.atomic
 def register_view(request):
     # Política de limpieza: Eliminar usuarios inactivos previos con el mismo
@@ -204,7 +204,7 @@ def register_view(request):
     description="Verify the registration code."
 )
 @api_view(["POST"])
-@ensure_csrf_cookie
+@csrf_exempt
 def verify_code_view(request):
     serializer = VerifyCodeSerializer(data=request.data)
     if serializer.is_valid():
@@ -247,7 +247,7 @@ def verify_code_view(request):
     description="Authenticate user and create session."
 )
 @api_view(["POST"])
-@ensure_csrf_cookie
+@csrf_exempt
 @throttle_classes([LoginRateThrottle])
 def login_view(request):
     serializer = LoginSerializer(data=request.data)
@@ -381,7 +381,7 @@ def logout_view(request):
 
 @extend_schema(request=ResendCodeSerializer, responses={200: OpenApiTypes.STR})
 @api_view(["POST"])
-@ensure_csrf_cookie
+@csrf_exempt
 @transaction.atomic
 def resend_code_view(request):
     serializer = ResendCodeSerializer(data=request.data)
