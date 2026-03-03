@@ -19,8 +19,11 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Cargar variables de entorno desde .env
+# Cargar variables de entorno (Prioridad: .env o variables del sistema en Render)
 load_dotenv(os.path.join(BASE_DIR, ".env"))
+# Opcional: Cargar archivo de producción si existe físicamente (en local)
+if os.path.exists(os.path.join(BASE_DIR, "backend.env.production")):
+    load_dotenv(os.path.join(BASE_DIR, "backend.env.production"), override=True)
 
 
 # Quick-start development settings - unsuitable for production
@@ -127,7 +130,7 @@ WSGI_APPLICATION = "meteorite_backend.wsgi.application"
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 # Database Selection (Local vs Production)
-DATABASE_ENV = os.getenv("DATABASE_ENV", "production").lower()
+DATABASE_ENV = os.getenv("DATABASE_ENV", "local").lower()
 
 if DATABASE_ENV == "production":
     DATABASES = {

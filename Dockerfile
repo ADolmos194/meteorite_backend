@@ -17,4 +17,4 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput
 
-CMD ["daphne", "-b", "0.0.0.0", "-p", "10000", "meteorite_backend.asgi:application"]
+CMD daphne -b 0.0.0.0 -p ${PORT:-10000} meteorite_backend.asgi:application
