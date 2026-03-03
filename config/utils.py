@@ -102,7 +102,11 @@ def MiddlewareAutentication(decorator_name):
         def _wrapped_view(request, *args, **kwargs):
             if not request.user.is_authenticated:
                 return JsonResponse(
-                    {"status": "error", "message": "No autenticado", "data": None},
+                    {
+                        "status": "error",
+                        "message": "No autenticado",
+                        "data": None
+                    },
                     status=status.HTTP_401_UNAUTHORIZED
                 )
 
@@ -127,14 +131,17 @@ def MiddlewareAutentication(decorator_name):
             if has_permission:
                 return view_func(request, *args, **kwargs)
 
-            return JsonResponse(
-                {
-                    "status": "error",
-                    "message": f"No tiene permisos para realizar esta acción ({decorator_name})",
-                    "data": None
-                },
-                status=status.HTTP_403_FORBIDDEN
-            )
+                return JsonResponse(
+                    {
+                        "status": "error",
+                        "message": (
+                            "No tiene permisos para realizar esta acción "
+                            f"({decorator_name})"
+                        ),
+                        "data": None
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
         return _wrapped_view
 
