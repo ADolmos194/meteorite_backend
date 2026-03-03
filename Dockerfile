@@ -17,4 +17,4 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "meteorite_backend.wsgi:application"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "meteorite_backend.asgi:application"]

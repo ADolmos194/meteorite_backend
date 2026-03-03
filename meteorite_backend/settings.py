@@ -210,9 +210,16 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG  # Solo permitir todo en modo DEBUG (desarrollo)
 CORS_ALLOW_CREDENTIALS = True
 
 if not CORS_ALLOW_ALL_ORIGINS:
-    CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-    # Eliminar strings vacíos
-    CORS_ALLOWED_ORIGINS = [o for o in CORS_ALLOWED_ORIGINS if o]
+    _cors_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
+    CORS_ALLOWED_ORIGINS = (
+        [o.strip() for o in _cors_env.split(",") if o.strip()]
+        if _cors_env
+        else [
+            "https://yachayagro.web.app",
+            "https://yachayagro.firebaseapp.com",
+            "https://yachay-agro.vercel.app",
+        ]
+    )
 
 CSRF_COOKIE_HTTPONLY = False  # Permitir que el frontend lea la cookie CSRF
 _csrf_env = os.getenv("CSRF_TRUSTED_ORIGINS", "")
