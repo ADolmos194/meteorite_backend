@@ -13,6 +13,7 @@ from django.core.mail import send_mail
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 
 from access.models import Menu, PermissionRole, RoleMenu, UserRole
+from access.utils import build_menu_tree
 from django.template.loader import render_to_string
 from config.utils import errorcall, succescall
 
@@ -42,33 +43,6 @@ class LoginRateThrottle(AnonRateThrottle):
     máx 10 intentos/minuto por IP.
     """
     scope = "login"
-
-
-def build_menu_tree(menus, parent=None):
-    """
-    Recursive function to build a hierarchical menu.
-    """
-    tree = []
-    # Filter menus by parent
-    level_menus = [m for m in menus if m.parent == parent]
-
-    # Sort by ordering
-    level_menus.sort(key=lambda x: x.ordering)
-
-    for menu in level_menus:
-        node = {
-            "id": str(menu.id),
-            "subject": menu.subject,
-            "description": menu.description,
-            "title": menu.title,
-            "icon": menu.icon,
-            "ordering": menu.ordering,
-            "to": menu.to or "root",
-            "children": build_menu_tree(menus, parent=menu),
-        }
-        tree.append(node)
-
-    return tree
 
 
 def get_user_session_data(user):
@@ -457,3 +431,69 @@ def resend_code_view(request):
         return succescall(response_data, "Nuevo código enviado con éxito")
 
     return errorcall(serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["POST"])
+def user_get_view(request):
+    """
+    Lista paginada de usuarios para el módulo de seguridad.
+    Body: { page, page_size, status (activo|inactivo|todos) }
+    """
+    if not request.user.is_authenticated:
+        return errorcall("No autenticado", status.HTTP_401_UNAUTHORIZED)
+
+    page = int(request.data.get("page", 1))
+    page_size = int(request.data.get("page_size", 10))
+    status_filter = request.data.get("status", "todos")
+
+    qs = User.objects.all().order_by("first_name", "last_name")
+
+    if status_filter == "activo":
+        qs = qs.filter(is_active=True)
+    elif status_filter == "inactivo":
+        qs = qs.filter(is_active=False)
+
+    total = qs.count()
+    start = (page - 1) * page_size
+    end = start + page_size
+    users_page = qs[start:end]
+
+    results = [
+        {
+            "id": str(u.id),
+            "first_name": u.first_name,
+            "last_name": u.last_name,
+            "email": u.email,
+            "username": u.username,
+            "status": "activo" if u.is_active else "inactivo",
+        }
+        for u in users_page
+    ]
+
+    return succescall(
+        {"results": results, "total": total, "page": page,
+         "page_size": page_size},
+        "Usuarios obtenidos",
+    )
+
+
+@api_view(["POST"])
+def user_select_view(request):
+    """
+    Lista compacta de usuarios activos para selectores/dropdowns.
+    """
+    if not request.user.is_authenticated:
+        return errorcall("No autenticado", status.HTTP_401_UNAUTHORIZED)
+
+    users = User.objects.filter(is_active=True).order_by(
+        "first_name", "last_name"
+    )
+    results = [
+        {
+            "id": str(u.id),
+            "full_name": f"{u.first_name} {u.last_name}".strip() or u.username,
+            "email": u.email,
+        }
+        for u in users
+    ]
+    return succescall(results, "Usuarios obtenidos")

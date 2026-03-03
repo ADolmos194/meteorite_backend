@@ -27,7 +27,7 @@ Write-Host "--- Syncing Local DB ($LOCAL_DB) to Render PROD ($PROD_DB) ---" -For
 # 4. Generate Dump (Schema + Data)
 Write-Host "Step 1: Exporting local dump..."
 $env:PGPASSWORD = $LOCAL_PASS
-& "$LOCAL_PG_BIN\pg_dump.exe" -h localhost -p $LOCAL_PORT -U $LOCAL_USER -d $LOCAL_DB --no-owner --no-privileges --file=sync_dump.sql
+& "$LOCAL_PG_BIN\pg_dump.exe" -h localhost -p $LOCAL_PORT -U $LOCAL_USER -d $LOCAL_DB --no-owner --no-privileges --clean --if-exists --file=sync_dump.sql
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Error during export. Is the Docker container running?" -ForegroundColor Red
@@ -42,7 +42,8 @@ $RENDER_URL = "postgresql://$PROD_USER`:$PROD_PASS@$PROD_HOST`:$PROD_PORT/$PROD_
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Error during import to Render." -ForegroundColor Red
-} else {
+}
+else {
     Write-Host "Sync Complete! Local changes are now in Render." -ForegroundColor Green
 }
 

@@ -21,6 +21,8 @@ env.bak
 .env.local
 local_settings.py
 secrets.json
+backend.env.production
+sync_dump.sql
 
 # Django
 db.sqlite3

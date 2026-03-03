@@ -28,6 +28,7 @@ urlpatterns = [
     path("auth/", include("auth.urls")),
     path("config/", include("config.urls")),
     path("config-master/", include("general_master.urls")),
+    path("access/", include("access.urls")),
     # API Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

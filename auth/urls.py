@@ -6,6 +6,8 @@ from .views import (
     register_view,
     resend_code_view,
     session_view,
+    user_get_view,
+    user_select_view,
     verify_code_view,
 )
 
@@ -16,4 +18,6 @@ urlpatterns = [
     path("login/", login_view, name="login"),
     path("logout/", logout_view, name="logout"),
     path("session/", session_view, name="session"),
+    path("user/get/", user_get_view, name="user-get"),
+    path("user/select/", user_select_view, name="user-select"),
 ]
