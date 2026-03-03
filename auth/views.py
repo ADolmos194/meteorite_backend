@@ -122,7 +122,8 @@ def get_user_session_data(user):
 def session_view(request):
     """
     Returns user info if the session is valid.
-    For guests, returns 401 but includes a CSRF token in the body for subsequent requests.
+    For guests, returns 401 but includes a CSRF token in the body for
+    subsequent requests.
     """
     if not request.user.is_authenticated:
         return errorcall(
