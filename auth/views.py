@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.db import transaction
 from django.middleware.csrf import get_token
 from django.utils import timezone
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from rest_framework import status
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.throttling import AnonRateThrottle
@@ -122,9 +122,14 @@ def get_user_session_data(user):
 def session_view(request):
     """
     Returns user info if the session is valid.
+    For guests, returns 401 but includes a CSRF token in the body for subsequent requests.
     """
     if not request.user.is_authenticated:
-        return errorcall("No autenticado", status.HTTP_401_UNAUTHORIZED)
+        return errorcall(
+            "No autenticado",
+            status.HTTP_401_UNAUTHORIZED,
+            data={"csrfToken": get_token(request)}
+        )
 
     data = get_user_session_data(request.user)
     data["csrfToken"] = get_token(request)
