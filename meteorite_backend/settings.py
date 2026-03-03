@@ -71,6 +71,7 @@ MIDDLEWARE = [
 
 # Configuración de Seguridad para Producción
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False") == "True"
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0"))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv(
     "SECURE_HSTS_INCLUDE_SUBDOMAINS", "False") == "True"
@@ -217,7 +218,6 @@ if not CORS_ALLOW_ALL_ORIGINS:
         else [
             "https://yachayagro.web.app",
             "https://yachayagro.firebaseapp.com",
-            "https://yachay-agro.vercel.app",
         ]
     )
 
