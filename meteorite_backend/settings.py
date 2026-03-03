@@ -79,8 +79,14 @@ SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0"))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv(
     "SECURE_HSTS_INCLUDE_SUBDOMAINS", "False") == "True"
 SECURE_HSTS_PRELOAD = os.getenv("SECURE_HSTS_PRELOAD", "False") == "True"
-SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False") == "True"
-CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "False") == "True"
+
+# Cookies y Sesiones (Cross-site para Firebase + Render)
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
+CSRF_COOKIE_SAMESITE = 'None' if not DEBUG else 'Lax'
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # Permitir que el frontend lea la cookie CSRF
 
 # Configuración de expiración de sesión
 # SESSION_COOKIE_AGE: tiempo de vida de la cookie en segundos (default 1 hora)
@@ -224,7 +230,6 @@ if not CORS_ALLOW_ALL_ORIGINS:
         ]
     )
 
-CSRF_COOKIE_HTTPONLY = False  # Permitir que el frontend lea la cookie CSRF
 _csrf_env = os.getenv("CSRF_TRUSTED_ORIGINS", "")
 CSRF_TRUSTED_ORIGINS = (
     [o.strip() for o in _csrf_env.split(",") if o.strip()]
