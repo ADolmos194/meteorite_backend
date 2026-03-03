@@ -126,7 +126,7 @@ WSGI_APPLICATION = "meteorite_backend.wsgi.application"
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 # Database Selection (Local vs Production)
-DATABASE_ENV = os.getenv("DATABASE_ENV", "local").lower()
+DATABASE_ENV = os.getenv("DATABASE_ENV", "production").lower()
 
 if DATABASE_ENV == "production":
     DATABASES = {
@@ -220,8 +220,9 @@ CSRF_TRUSTED_ORIGINS = (
     [o.strip() for o in _csrf_env.split(",") if o.strip()]
     if _csrf_env
     else [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
+        # "http://localhost:5173",
+        # "http://127.0.0.1:5173",
+        "https://yachayagro.web.app",
     ]
 )
 
