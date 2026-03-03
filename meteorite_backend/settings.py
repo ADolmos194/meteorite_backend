@@ -19,11 +19,11 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Cargar variables de entorno (Prioridad: .env o variables del sistema en Render)
+# Cargar variables de entorno (Prioridad: .env o sistema)
 load_dotenv(os.path.join(BASE_DIR, ".env"))
-# Opcional: Cargar archivo de producción si existe físicamente (en local)
 if os.path.exists(os.path.join(BASE_DIR, "backend.env.production")):
-    load_dotenv(os.path.join(BASE_DIR, "backend.env.production"), override=True)
+    prod_env = os.path.join(BASE_DIR, "backend.env.production")
+    load_dotenv(prod_env, override=True)
 
 
 # Quick-start development settings - unsuitable for production
