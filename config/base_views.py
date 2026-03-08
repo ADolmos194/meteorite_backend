@@ -24,7 +24,7 @@ from audit.utils import (
 
 class BaseViewFactory:
     """
-    Factory to generate standard CRUD views with automatic auditing.
+    Factoría para generar vistas CRUD estándar con auditoría automática.
     """
     def __init__(self, model, serializer_class, module_name, permission_prefix):
         self.model = model
@@ -34,7 +34,7 @@ class BaseViewFactory:
 
     def get_view(self, filters=None, order_by=None):
         """
-        filters: list of strings representing fields to filter from request.data
+        filters: lista de strings que representan los campos a filtrar desde request.data
         """
         @extend_schema(request=None, responses={200: self.serializer_class(many=True)})
         @MiddlewareAutentication(f"{self.permission_prefix}_get")
@@ -213,7 +213,7 @@ class BaseViewFactory:
     def status_change_view(self, target_status, event_type):
         @extend_schema(request=None, responses={200: OpenApiTypes.STR})
         @MiddlewareAutentication(f"{self.permission_prefix}_{target_status.lower() if target_status != STATUS_ANULADO else 'annul'}")
-        @api_view(["PATCH", "DELETE"]) # Permitir DELETE para compatibilidad con removals
+        @api_view(["PATCH", "DELETE"]) # Permitir DELETE para compatibilidad con eliminaciones
         def view(request):
             pks = request.data.get("ids", [])
             pk = request.data.get("id")
