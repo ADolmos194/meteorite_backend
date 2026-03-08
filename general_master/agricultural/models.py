@@ -12,8 +12,8 @@ from general_master.config_master.models import (
 
 # Create your models here.
 class Crop(BaseModel):
-    name = models.CharField(max_length=100)
-    abbreviation = models.CharField(max_length=10)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    abbreviation = models.CharField(max_length=10, blank=True, null=True)
     key_country = models.ForeignKey(Country, on_delete=models.CASCADE)
     key_department = models.ForeignKey(Department, on_delete=models.CASCADE)
     key_province = models.ForeignKey(Province, on_delete=models.CASCADE)
@@ -25,8 +25,8 @@ class Crop(BaseModel):
 
 
 class Farm(BaseModel):
-    name = models.CharField(max_length=100)
-    abbreviation = models.CharField(max_length=10)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    abbreviation = models.CharField(max_length=10, blank=True, null=True)
     key_country = models.ForeignKey(Country, on_delete=models.CASCADE)
     key_department = models.ForeignKey(Department, on_delete=models.CASCADE)
     key_province = models.ForeignKey(Province, on_delete=models.CASCADE)
@@ -38,8 +38,8 @@ class Farm(BaseModel):
 
 
 class Field(BaseModel):
-    name = models.CharField(max_length=100)
-    abbreviation = models.CharField(max_length=10)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    abbreviation = models.CharField(max_length=10, blank=True, null=True)
     key_farm = models.ForeignKey(Farm, on_delete=models.CASCADE)
 
     class Meta:
@@ -47,8 +47,8 @@ class Field(BaseModel):
 
 
 class Stage(BaseModel):
-    name = models.CharField(max_length=100)
-    abbreviation = models.CharField(max_length=10)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    abbreviation = models.CharField(max_length=10, blank=True, null=True)
     key_field = models.ForeignKey(Field, on_delete=models.CASCADE)
 
     class Meta:
@@ -56,8 +56,8 @@ class Stage(BaseModel):
 
 
 class Shift(BaseModel):
-    name = models.CharField(max_length=100)
-    abbreviation = models.CharField(max_length=10)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    abbreviation = models.CharField(max_length=10, blank=True, null=True)
     key_stage = models.ForeignKey(Stage, on_delete=models.CASCADE)
 
     class Meta:

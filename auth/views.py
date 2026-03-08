@@ -12,7 +12,7 @@ from rest_framework.throttling import AnonRateThrottle
 from django.core.mail import send_mail
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 
-from access.models import Menu, PermissionRole, RoleMenu, UserRole
+from access.models import Menu, PermissionRole, RoleMenu, UserRole, UserGroupRole
 from access.utils import build_menu_tree
 from django.template.loader import render_to_string
 from config.utils import errorcall, succescall
@@ -45,15 +45,27 @@ class LoginRateThrottle(AnonRateThrottle):
     scope = "login"
 
 
-def get_user_session_data(user):
+def get_user_session_data(user, request=None):
     """
     Helper function to gather user info, menus, and permissions.
     """
     try:
-        # 1. Obtener Roles del usuario
-        user_roles = UserRole.objects.filter(
-            user_id=user.id).select_related("role")
-        roles = [ur.role for ur in user_roles]
+        # 1. Obtener Roles del usuario (Directos + Roles por Grupo)
+        direct_roles = list(UserRole.objects.filter(
+            user_id=user.id).select_related("role"))
+        group_roles = list(UserGroupRole.objects.filter(
+            user_id=user.id).select_related("role"))
+
+        all_role_objs = [ur.role for ur in direct_roles] + [gr.role for gr in group_roles]
+        
+        # Eliminar duplicados por ID
+        roles = []
+        seen_ids = set()
+        for r in all_role_objs:
+            if r.id not in seen_ids:
+                roles.append(r)
+                seen_ids.add(r.id)
+        
         role_names = [r.name for r in roles]
 
         # 2. Verificar si es Superusuario o tiene "ALL PERMISSIONS"
@@ -76,11 +88,15 @@ def get_user_session_data(user):
         else:
             perms = PermissionRole.objects.filter(
                 role__in=roles).select_related("permission")
-            permisos_back = list(set([p.permission.name for p in perms]))
+            # Usamos strip() para evitar errores por espacios invisibles
+            permisos_back = list(set([
+                str(p.permission.decorator_name).strip() 
+                for p in perms
+            ]))
             permisos_front = [{"action": "read", "subject": p}
-                              for p in permisos_back]
+                               for p in permisos_back]
 
-        return {
+        result = {
             "user_info": {
                 "id": str(user.id),
                 "username": user.username,
@@ -94,6 +110,11 @@ def get_user_session_data(user):
                 "permisos_back": permisos_back,
             }
         }
+
+        if request and hasattr(request, 'session'):
+            result["expires_at"] = request.session.get_expiry_date().isoformat()
+
+        return result
     except Exception as e:
         print(f"ERROR gathering session data for user {user.username}: {e}")
         # Retornar datos mínimos para evitar que la app crashee
@@ -132,7 +153,7 @@ def session_view(request):
             data={"csrfToken": get_token(request)}
         )
 
-    data = get_user_session_data(request.user)
+    data = get_user_session_data(request.user, request)
     data["csrfToken"] = get_token(request)
     return succescall(data, "Sesión válida")
 
@@ -348,7 +369,7 @@ def login_view(request):
             authenticated_user.save()
 
             # Recopilar datos de sesión
-            data = get_user_session_data(authenticated_user)
+            data = get_user_session_data(authenticated_user, request)
             data["csrfToken"] = get_token(request)
 
             return succescall(data, MSG_LOGIN_SUCCESS)

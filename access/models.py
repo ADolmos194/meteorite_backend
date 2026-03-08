@@ -4,8 +4,8 @@ from config.models import BaseModel
 
 
 class System(BaseModel):
-    name = models.CharField(max_length=50)
-    description = models.TextField()
+    name = models.CharField(max_length=50, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -15,7 +15,7 @@ class System(BaseModel):
 
 
 class Menu(BaseModel):
-    subject = models.CharField(max_length=100)
+    subject = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(null=True, blank=True)
     title = models.CharField(max_length=100)
     icon = models.CharField(max_length=100, null=True, blank=True)
@@ -36,8 +36,8 @@ class Menu(BaseModel):
 
 
 class Action(BaseModel):
-    name = models.CharField(max_length=50)
-    description = models.TextField()
+    name = models.CharField(max_length=50, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -47,8 +47,8 @@ class Action(BaseModel):
 
 
 class Event(BaseModel):
-    name = models.CharField(max_length=50)
-    description = models.TextField()
+    name = models.CharField(max_length=50, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -57,9 +57,9 @@ class Event(BaseModel):
         db_table = "acc_event"
 
 
-class Role(BaseModel):
-    name = models.CharField(max_length=50)
-    description = models.TextField()
+class Role(BaseModel): 
+    name = models.CharField(max_length=50, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -77,11 +77,12 @@ class UserRole(BaseModel):
 
     class Meta:
         db_table = "acc_user_role"
+        unique_together = ("user_id", "role")
 
 
 class Group(BaseModel):
-    name = models.CharField(max_length=50)
-    description = models.TextField()
+    name = models.CharField(max_length=50, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -99,6 +100,7 @@ class UserGroup(BaseModel):
 
     class Meta:
         db_table = "acc_user_group"
+        unique_together = ("user_id", "group")
 
 
 class UserGroupRole(BaseModel):
@@ -111,13 +113,15 @@ class UserGroupRole(BaseModel):
 
     class Meta:
         db_table = "acc_user_group_role"
+        unique_together = ("user_id", "group", "role")
 
 
 class Permission(BaseModel):
-    name = models.CharField(max_length=50)
-    decorator_name = models.TextField()
-    api_url = models.TextField()
-    description = models.TextField()
+    name = models.CharField(max_length=50, blank=True, null=True)
+    method = models.CharField(max_length=10, blank=True, null=True)
+    decorator_name = models.TextField(blank=True, null=True)
+    api_url = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = "acc_permission"
@@ -132,6 +136,7 @@ class PermissionRole(BaseModel):
 
     class Meta:
         db_table = "acc_permission_role"
+        unique_together = ("permission", "role")
 
 
 class PermissionSystem(BaseModel):
@@ -143,6 +148,7 @@ class PermissionSystem(BaseModel):
 
     class Meta:
         db_table = "acc_permission_system"
+        unique_together = ("permission", "system")
 
 
 class RoleMenu(BaseModel):

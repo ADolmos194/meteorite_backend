@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from auth.models import User
 
 from .models import (
     Action,
@@ -117,7 +118,7 @@ class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
         fields = [
-            "id", "name", "decorator_name", "api_url", "description",
+            "id", "name", "method", "decorator_name", "api_url", "description",
             "status_name", "status",
             "key_user_created", "key_user_updated",
             "created_at", "updated_at",
@@ -147,11 +148,19 @@ class UserGroupSerializer(serializers.ModelSerializer):
     group_name = serializers.CharField(source="group.name", read_only=True)
     status_name = serializers.CharField(
         source="status.name", read_only=True)
+    user_full_name = serializers.SerializerMethodField()
+
+    def get_user_full_name(self, obj):
+        try:
+            user = User.objects.get(id=obj.user_id)
+            return f"{user.first_name} {user.last_name}".strip() or str(obj.user_id)
+        except User.DoesNotExist:
+            return str(obj.user_id)
 
     class Meta:
         model = UserGroup
         fields = [
-            "id", "user_id", "group", "group_name",
+            "id", "user_id", "user_full_name", "group", "group_name",
             "status_name", "status",
             "key_user_created", "key_user_updated",
             "created_at", "updated_at",
@@ -165,11 +174,20 @@ class UserGroupRoleSerializer(serializers.ModelSerializer):
     role_name = serializers.CharField(source="role.name", read_only=True)
     status_name = serializers.CharField(
         source="status.name", read_only=True)
+    user_full_name = serializers.SerializerMethodField()
+
+    def get_user_full_name(self, obj):
+        try:
+            user = User.objects.get(id=obj.user_id)
+            return f"{user.first_name} {user.last_name}".strip() or str(obj.user_id)
+        except User.DoesNotExist:
+            return str(obj.user_id)
 
     class Meta:
         model = UserGroupRole
         fields = [
-            "id", "user_id", "group", "group_name", "role", "role_name",
+            "id", "user_id", "user_full_name",
+            "group", "group_name", "role", "role_name",
             "status_name", "status",
             "key_user_created", "key_user_updated",
             "created_at", "updated_at",
@@ -179,18 +197,26 @@ class UserGroupRoleSerializer(serializers.ModelSerializer):
 
 # ─── Pivote: PermissionRole ──────────────────────────────────────────────────
 class PermissionRoleSerializer(serializers.ModelSerializer):
-    permission_name = serializers.CharField(
-        source="permission.name", read_only=True)
-    permission_decorator = serializers.CharField(
-        source="permission.decorator_name", read_only=True)
+    permission_name = serializers.SerializerMethodField()
+    decorator_name = serializers.SerializerMethodField()
+    permission_decorator = serializers.SerializerMethodField()
     role_name = serializers.CharField(source="role.name", read_only=True)
     status_name = serializers.CharField(
         source="status.name", read_only=True)
 
+    def get_permission_name(self, obj):
+        return obj.permission.name if obj.permission else ""
+
+    def get_decorator_name(self, obj):
+        return obj.permission.decorator_name if obj.permission else ""
+
+    def get_permission_decorator(self, obj):
+        return obj.permission.decorator_name if obj.permission else ""
+
     class Meta:
         model = PermissionRole
         fields = [
-            "id", "permission", "permission_name", "permission_decorator",
+            "id", "permission", "permission_name", "decorator_name", "permission_decorator",
             "role", "role_name",
             "status_name", "status",
             "key_user_created", "key_user_updated",
@@ -201,17 +227,27 @@ class PermissionRoleSerializer(serializers.ModelSerializer):
 
 # ─── Pivote: PermissionSystem ────────────────────────────────────────────────
 class PermissionSystemSerializer(serializers.ModelSerializer):
-    permission_name = serializers.CharField(
-        source="permission.name", read_only=True)
+    permission_name = serializers.SerializerMethodField()
+    decorator_name = serializers.SerializerMethodField()
+    permission_decorator = serializers.SerializerMethodField()
     system_name = serializers.CharField(
         source="system.name", read_only=True)
     status_name = serializers.CharField(
         source="status.name", read_only=True)
 
+    def get_permission_name(self, obj):
+        return obj.permission.name if obj.permission else ""
+
+    def get_decorator_name(self, obj):
+        return obj.permission.decorator_name if obj.permission else ""
+
+    def get_permission_decorator(self, obj):
+        return obj.permission.decorator_name if obj.permission else ""
+
     class Meta:
         model = PermissionSystem
         fields = [
-            "id", "permission", "permission_name",
+            "id", "permission", "permission_name", "decorator_name", "permission_decorator",
             "system", "system_name",
             "status_name", "status",
             "key_user_created", "key_user_updated",

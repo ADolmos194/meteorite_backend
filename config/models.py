@@ -6,8 +6,8 @@ from django.db import models
 
 class TypeStatus(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=50)
-    description = models.TextField()
+    name = models.CharField(max_length=50, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -18,8 +18,8 @@ class TypeStatus(models.Model):
 
 class Status(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=50)
-    description = models.TextField()
+    name = models.CharField(max_length=50, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
     color_code = models.CharField(
         max_length=7,
         default="#6C757D",

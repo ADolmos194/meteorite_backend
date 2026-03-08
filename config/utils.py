@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from django.http import JsonResponse
 
-from access.models import PermissionRole, UserRole
+from access.models import PermissionRole, UserRole, UserGroupRole, UserGroup
 
 # ---------------------------------------------------------
 # CONSTANTES DE ESTADO (UUIDs)
@@ -81,16 +81,21 @@ def warningresponse(message="Advertencia de negocio"):
 
 
 def errorcall(
-    message="Error crítico", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+    message="Error crítico",
+    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    data=None,
 ):
-    return Response({"status": "error", "message": message,
-                     "data": None}, status=status_code)
+    return Response(
+        {"status": "error", "message": message, "data": data}, status=status_code
+    )
 
 
 def errorresponse(
-    message="Error crítico", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+    message="Error crítico",
+    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    data=None,
 ):
-    return errorcall(message, status_code)
+    return errorcall(message, status_code, data)
 
 
 # ---------------------------------------------------------
@@ -110,38 +115,65 @@ def MiddlewareAutentication(decorator_name):
                     status=status.HTTP_401_UNAUTHORIZED
                 )
 
-            # 1. Obtener Roles del usuario
-            user_roles = UserRole.objects.filter(
-                user_id=request.user.id
+            # 2. Verificar si el usuario está ACTIVO
+            if not getattr(request.user, "is_active", False):
+                return JsonResponse(
+                    {
+                        "status": "error",
+                        "message": "Usuario inactivo",
+                        "data": None
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # 3. Obtener Roles del usuario (Directos y por Grupo)
+            # Solo roles ACTIVOS y de grupos ACTIVOS
+            user_roles_qs = UserRole.objects.filter(
+                user_id=request.user.id,
+                status_id=STATUS_ACTIVO,
+                role__status_id=STATUS_ACTIVO
             ).select_related("role")
-            roles = [ur.role for ur in user_roles]
+            
+            user_groups_roles_qs = UserGroupRole.objects.filter(
+                user_id=request.user.id,
+                status_id=STATUS_ACTIVO,
+                group__status_id=STATUS_ACTIVO,
+                role__status_id=STATUS_ACTIVO
+            ).select_related("role", "group")
+
+            roles = list(set([ur.role for ur in user_roles_qs] + [ugr.role for ugr in user_groups_roles_qs]))
             role_names = [r.name for r in roles]
 
-            # 2. Verificar si es Superusuario o tiene "ALL PERMISSIONS"
+            # 4. Verificar si es Superusuario o tiene "ALL PERMISSIONS"
             if "ALL PERMISSIONS" in role_names or getattr(
                 request.user, "is_admin", False
-            ):
+            ) or getattr(request.user, "is_superuser", False):
                 return view_func(request, *args, **kwargs)
 
+
             # 3. Verificar permiso específico por decorator_name
+            # Asegurar que el permiso también esté activo
             has_permission = PermissionRole.objects.filter(
-                role__in=roles, permission__decorator_name=decorator_name
+                role__in=roles, 
+                permission__decorator_name=decorator_name,
+                status_id=STATUS_ACTIVO,
+                permission__status_id=STATUS_ACTIVO
             ).exists()
 
             if has_permission:
                 return view_func(request, *args, **kwargs)
 
-                return JsonResponse(
-                    {
-                        "status": "error",
-                        "message": (
-                            "No tiene permisos para realizar esta acción "
-                            f"({decorator_name})"
-                        ),
-                        "data": None
-                    },
-                    status=status.HTTP_403_FORBIDDEN
-                )
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": (
+                        "No tiene permisos para realizar esta acción "
+                        f"({decorator_name})"
+                    ),
+                    "data": None
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         return _wrapped_view
 

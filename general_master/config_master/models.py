@@ -7,9 +7,9 @@ from config.utils import STATUS_ANULADO
 
 
 class Country(BaseModel):
-    code = models.CharField(max_length=10)
-    name = models.CharField(max_length=100)
-    abbreviation = models.CharField(max_length=10)
+    code = models.CharField(max_length=10, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    abbreviation = models.CharField(max_length=10, blank=True, null=True)
     iso_alpha_2 = models.CharField(max_length=2, null=True, blank=True)
     iso_alpha_3 = models.CharField(max_length=3, null=True, blank=True)
     phone_prefix = models.CharField(max_length=10, null=True, blank=True)
@@ -41,9 +41,9 @@ class Country(BaseModel):
 
 
 class Money(BaseModel):
-    code = models.CharField(max_length=10)
-    name = models.CharField(max_length=100)
-    symbol = models.CharField(max_length=10)
+    code = models.CharField(max_length=10, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    symbol = models.CharField(max_length=10, blank=True, null=True)
     key_country = models.ForeignKey(Country, on_delete=models.CASCADE)
 
     class Meta:
@@ -51,9 +51,9 @@ class Money(BaseModel):
 
 
 class Department(BaseModel):
-    code = models.CharField(max_length=10)
-    name = models.CharField(max_length=100)
-    abbreviation = models.CharField(max_length=10)
+    code = models.CharField(max_length=10, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    abbreviation = models.CharField(max_length=10, blank=True, null=True)
     key_country = models.ForeignKey(Country, on_delete=models.CASCADE)
 
     class Meta:
@@ -73,9 +73,9 @@ class Department(BaseModel):
 
 
 class Province(BaseModel):
-    code = models.CharField(max_length=10)
-    name = models.CharField(max_length=100)
-    abbreviation = models.CharField(max_length=10)
+    code = models.CharField(max_length=10, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    abbreviation = models.CharField(max_length=10, blank=True, null=True)
     key_department = models.ForeignKey(Department, on_delete=models.CASCADE)
 
     class Meta:
@@ -83,9 +83,9 @@ class Province(BaseModel):
 
 
 class District(BaseModel):
-    code = models.CharField(max_length=10)
-    name = models.CharField(max_length=100)
-    abbreviation = models.CharField(max_length=10)
+    code = models.CharField(max_length=10, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    abbreviation = models.CharField(max_length=10, blank=True, null=True)
     key_province = models.ForeignKey(Province, on_delete=models.CASCADE)
 
     class Meta:
@@ -93,9 +93,9 @@ class District(BaseModel):
 
 
 class Society(BaseModel):
-    code = models.CharField(max_length=10)
-    name = models.CharField(max_length=100)
-    abbreviation = models.CharField(max_length=10)
+    code = models.CharField(max_length=10, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    abbreviation = models.CharField(max_length=10, blank=True, null=True)
     key_country = models.ForeignKey(Country, on_delete=models.CASCADE)
     key_department = models.ForeignKey(Department, on_delete=models.CASCADE)
     key_province = models.ForeignKey(Province, on_delete=models.CASCADE)

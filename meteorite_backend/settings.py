@@ -21,7 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Cargar variables de entorno (Prioridad: .env o sistema)
 load_dotenv(os.path.join(BASE_DIR, ".env"))
-if os.path.exists(os.path.join(BASE_DIR, "backend.env.production")):
+# Detectar si la intención original era local antes de posibles overrides
+# Usamos strip() por si hay espacios invisibles
+IS_LOCAL = os.getenv("DATABASE_ENV", "local").strip().lower() == "local"
+
+# Solo cargar entorno de producción si no estamos explícitamente en local
+if os.getenv("DATABASE_ENV", "local").lower() != "local" and os.path.exists(os.path.join(BASE_DIR, "backend.env.production")):
     prod_env = os.path.join(BASE_DIR, "backend.env.production")
     load_dotenv(prod_env, override=True)
 
@@ -35,7 +40,15 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
+
+# Asegurar que localhost y hosts comunes de Docker estén permitidos en desarrollo
+# o cuando se permita todo (*) explícitamente, o si no estamos en Render (detección de local).
+_dev_hosts = ["localhost", "127.0.0.1", "0.0.0.0", "django_local", "host.docker.internal"]
+if DEBUG or IS_LOCAL or "*" in ALLOWED_HOSTS or not os.getenv("RENDER"):
+    for host in _dev_hosts:
+        if host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(host)
 
 
 # Application definition
@@ -74,6 +87,8 @@ MIDDLEWARE = [
 
 # Configuración de Seguridad para Producción
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False") == "True"
+if IS_LOCAL:
+    SECURE_SSL_REDIRECT = False
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0"))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv(
@@ -229,6 +244,10 @@ if not CORS_ALLOW_ALL_ORIGINS:
             "https://yachayagro.firebaseapp.com",
         ]
     )
+    if IS_LOCAL:
+        for origin in ["http://localhost:5173", "http://127.0.0.1:5173"]:
+            if origin not in CORS_ALLOWED_ORIGINS:
+                CORS_ALLOWED_ORIGINS.append(origin)
 
 _csrf_env = os.getenv("CSRF_TRUSTED_ORIGINS", "")
 CSRF_TRUSTED_ORIGINS = (
@@ -240,6 +259,10 @@ CSRF_TRUSTED_ORIGINS = (
         "https://yachayagro.web.app",
     ]
 )
+if IS_LOCAL:
+    for origin in ["http://localhost:5173", "http://127.0.0.1:5173"]:
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
